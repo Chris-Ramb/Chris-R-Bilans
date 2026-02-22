@@ -294,9 +294,28 @@
       return;
     }
 
-    const rTxt = (R.answered===0) ? "Droite: non calculable (tout N/A)" : `Droite: ${R.points}/${R.max} (${R.pct}%)`;
+        const rTxt = (R.answered===0) ? "Droite: non calculable (tout N/A)" : `Droite: ${R.points}/${R.max} (${R.pct}%)`;
     const lTxt = (L.answered===0) ? "Gauche: non calculable (tout N/A)" : `Gauche: ${L.points}/${L.max} (${L.pct}%)`;
-    lastSummary = `Q‑FAAM‑F — ${rTxt} ; ${lTxt}`;
+
+    const rRaw = (R.answered===0) ? "" : `${R.points}/${R.max}`;
+    const rPct = (R.answered===0) ? "" : `${R.pct}`;
+    const lRaw = (L.answered===0) ? "" : `${L.points}/${L.max}`;
+    const lPct = (L.answered===0) ? "" : `${L.pct}`;
+
+    const meta = [
+      "QFAAMF",
+      ctx.code ? `Code:${ctx.code}` : "",
+      ctx.age ? `Age:${ctx.age}` : "",
+      ctx.side ? `Side:${ctx.side}` : "",
+      ctx.jx ? `Jx:${ctx.jx}` : "",
+      ctx.date ? `Date:${ctx.date}` : "",
+      rRaw ? `Droite:${rRaw}` : "Droite:",
+      rPct ? `DroitePct:${rPct}` : "DroitePct:",
+      lRaw ? `Gauche:${lRaw}` : "Gauche:",
+      lPct ? `GauchePct:${lPct}` : "GauchePct:"
+    ].filter(Boolean);
+
+    lastSummary = meta.join(" | ");
 
     finalLine.textContent = lastSummary;
     finalLine.style.display = "block";
