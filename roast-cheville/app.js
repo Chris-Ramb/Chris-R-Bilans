@@ -620,11 +620,14 @@
         goal: $("actGoal").value
       },
 
-      faam: {
-        raw: $("faamRaw").value,
-        pct: $("faamPct").value,
-        ref: $("faamRef").value,
-        comment: $("faamComment").value
+          faam: {
+        rawR: $("faamRawR")?.value || "",
+        pctR: $("faamPctR")?.value || "",
+        rawL: $("faamRawL")?.value || "",
+        pctL: $("faamPctL")?.value || "",
+        paste: $("faamPaste")?.value || "",
+        comment: $("faamComment")?.value || "",
+        source: $("faamSource")?.value || ""
       },
 
       autoSummary: $("autoSummary").value
