@@ -1,13 +1,659 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ROAST Cheville</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROAST Cheville – Bilan</title>
+  <meta name="theme-color" content="#1f2937" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+      --primary:#2563eb; --danger:#dc2626; --ok:#059669; --warn:#d97706;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:var(--bg)}
+    .app{max-width:1180px;margin:0 auto;padding:12px}
+    .topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .topbar h1{margin:0;font-size:1.05rem}
+    .subtitle{margin:2px 0 0;color:var(--muted);font-size:.88rem}
+    .actions{display:flex;flex-wrap:wrap;gap:8px}
+    button{
+      border:1px solid var(--line);background:#fff;color:var(--text);
+      border-radius:10px;padding:8px 10px;cursor:pointer;font-size:.92rem
+    }
+    button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    button.danger{border-color:#fecaca;color:var(--danger)}
+    button.ghost{background:transparent}
+    .banner{
+      border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:10px;
+      padding:8px 10px;margin-bottom:10px;font-size:.9rem
+    }
+
+    .stepper,.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+    .stepper{padding:10px;margin-bottom:10px}
+    .step-nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+    .step-btn{
+      min-height:42px;padding:6px;border:1px solid var(--line);border-radius:10px;background:#fff;
+      cursor:pointer;font-size:.8rem;text-align:center
+    }
+    .step-btn.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:600}
+    @media (max-width:900px){ .step-nav{grid-template-columns:repeat(3,minmax(0,1fr));}}
+    @media (max-width:600px){ .step-nav{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+    .panel{display:none;padding:12px}
+    .panel.active{display:block}
+    .panel h2{margin:0 0 10px;font-size:1rem}
+
+    .card{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;margin-bottom:10px}
+    .card h3{margin:0 0 8px;font-size:.92rem}
+    .muted{color:var(--muted)}
+    .help{font-size:.8rem;color:var(--muted)}
+    .help-q{
+      display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+      border-radius:50%;border:1px solid var(--line);font-size:.75rem;color:var(--muted);
+      margin-left:4px;cursor:help
+    }
+
+    .grid{display:grid;gap:10px}
+    .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    @media (max-width:900px){ .g4{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media (max-width:600px){ .g2,.g3,.g4{grid-template-columns:1fr} .actions{width:100%} .actions button{flex:1}}
+
+    .field{display:flex;flex-direction:column;gap:4px}
+    .field label{font-size:.84rem;color:var(--muted)}
+    .field input,.field select,.field textarea{
+      width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:.92rem
+    }
+    .field textarea{min-height:70px;resize:vertical}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}
+    .check-item{
+      display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;min-height:40px
+    }
+
+    details{
+      border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:10px
+    }
+    details>summary{cursor:pointer;font-weight:600;list-style:none}
+    details>summary::-webkit-details-marker{display:none}
+
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{border-collapse:collapse;width:100%;min-width:980px;background:#fff}
+    th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px;font-size:.84rem;vertical-align:top}
+    th{background:#f9fafb}
+    td:last-child,th:last-child{border-right:none}
+    .num{width:80px}
+    .tiny{width:60px}
+    .calc{font-weight:600;white-space:nowrap}
+    .badge{
+      display:inline-block;font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)
+    }
+
+    .wizard-footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+    .wizard-footer .right{display:flex;gap:8px}
+
+    .hidden{display:none !important}
+
+    #printSummary{display:none;background:#fff;color:#000;padding:18px}
+    #printSummary h1{font-size:18px;margin:0 0 6px}
+    #printSummary h2{font-size:14px;margin:10px 0 6px}
+    #printSummary .ps-card{border:1px solid #ddd;border-radius:8px;padding:8px;margin-bottom:8px;break-inside:avoid}
+    #printSummary table{min-width:unset;width:100%}
+    #printSummary th,#printSummary td{border:1px solid #ddd;padding:4px;font-size:11px}
+
+    @media print{
+      body.print-summary .app{display:none !important}
+      body.print-summary #printSummary{display:block !important}
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+  </style>
 </head>
 <body>
-  <h1>ROAST Cheville – en construction</h1>
-  <p>La page est bien créée ✅</p>
-  <p><a href="../">← Retour au sommaire</a></p>
+  <div class="app">
+    <div class="topbar">
+      <div>
+        <h1>ROAST Cheville – Bilan initial & suivi</h1>
+        <div class="subtitle">V1 • local • sans sauvegarde • export PDF via impression</div>
+      </div>
+      <div class="actions">
+        <button id="btnExportPdf" class="primary">Exporter PDF</button>
+        <button id="btnPrintForm">Imprimer</button>
+        <button id="btnNew">Nouveau bilan</button>
+        <button id="btnClear" class="danger">Effacer tout</button>
+      </div>
+    </div>
+
+    <div class="banner">
+      Aucune donnée n’est conservée (pas de base, pas de cookie, pas de localStorage). Si vous fermez la page sans exporter, les données sont perdues.
+    </div>
+
+    <div class="stepper">
+      <div class="step-nav" id="stepNav">
+        <button class="step-btn active" data-step="1">1. Mode</button>
+        <button class="step-btn" data-step="2">2. Contexte</button>
+        <button class="step-btn" data-step="3">3. Triage</button>
+        <button class="step-btn" data-step="4">4. Douleur / ROM</button>
+        <button class="step-btn" data-step="5">5. Force HHD</button>
+        <button class="step-btn" data-step="6">6. Équilibre</button>
+        <button class="step-btn" data-step="7">7. Marche / Synthèse</button>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="panel active" data-step-panel="1">
+      <h2>Étape 1 — Démarrage</h2>
+
+      <div class="card">
+        <h3>Mode de bilan</h3>
+        <div class="grid g3">
+          <label class="check-item"><input type="radio" name="appMode" value="ROAST cabinet" checked> ROAST cabinet</label>
+          <label class="check-item"><input type="radio" name="appMode" value="ROAST complet"> ROAST complet</label>
+          <label class="check-item"><input type="radio" name="appMode" value="ROAST + RTS"> ROAST + RTS <span class="badge">préparé</span></label>
+        </div>
+        <div class="help">Le mode RTS sera développé ensuite. La V1 garde la structure.</div>
+      </div>
+
+      <div class="card">
+        <h3>Réglages cliniques (modifiables)</h3>
+        <div class="grid g4">
+          <div class="field">
+            <label>Unité HHD</label>
+            <select id="hhdUnit">
+              <option value="kgf" selected>kgf</option>
+              <option value="N">N</option>
+              <option value="lbs">lbs</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Seuil LSI déficit (%)</label>
+            <input id="thLsi" type="number" value="90" min="1" max="200">
+          </div>
+          <div class="field">
+            <label>Seuil delta œdème (cm)</label>
+            <input id="thEdema" type="number" value="1" step="0.1" min="0">
+          </div>
+          <div class="field">
+            <label>Seuil asymétrie lunge (cm)</label>
+            <input id="thLungeCm" type="number" value="2" step="0.1" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="ghost" disabled>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="panel" data-step-panel="2">
+      <h2>Étape 2 — Contexte & chronologie</h2>
+
+      <div class="card">
+        <h3>Identification minimale</h3>
+        <div class="grid g4">
+          <div class="field">
+            <label>Code patient</label>
+            <input id="patientCode" type="text" placeholder="ex. CR-001">
+          </div>
+          <div class="field">
+            <label>Âge</label>
+            <input id="patientAge" type="number" min="0" max="120">
+          </div>
+          <div class="field">
+            <label>Côté lésé</label>
+            <select id="sideLesion">
+              <option value="">—</option>
+              <option>Gauche</option>
+              <option>Droite</option>
+              <option>Bilatéral</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Côté dominant</label>
+            <select id="sideDominant">
+              <option value="">—</option>
+              <option>Gauche</option>
+              <option>Droite</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Chronologie</h3>
+        <div class="grid g4">
+          <div class="field">
+            <label>Date du traumatisme</label>
+            <input id="traumaDate" type="date">
+          </div>
+          <div class="field">
+            <label>Date du bilan</label>
+            <input id="evalDate" type="date">
+          </div>
+          <div class="field">
+            <label>Jx (calcul automatique)</label>
+            <input id="jxDisplay" type="text" readonly>
+          </div>
+          <div class="field">
+            <label>Type de consultation</label>
+            <div class="row" style="border:1px solid var(--line);border-radius:10px;padding:8px;font-size:.84rem">
+              <label><input type="checkbox" class="consultType" value="Initial"> Initial</label>
+              <label><input type="checkbox" class="consultType" value="Suivi"> Suivi</label>
+              <label><input type="checkbox" class="consultType" value="Pré-course"> Pré-course</label>
+              <label><input type="checkbox" class="consultType" value="Pré-sport"> Pré-sport</label>
+              <label><input type="checkbox" class="consultType" value="Retour terrain"> Retour terrain</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Mécanisme lésionnel</h3>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" class="mech" value="Inversion"> Inversion</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Flexion plantaire"> Flexion plantaire</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Rotation interne"> Rotation interne</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Rotation externe"> Rotation externe</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Dorsiflexion forcée"> Dorsiflexion forcée</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Contact"> Contact</label>
+          <label class="check-item"><input type="checkbox" class="mech" value="Sans contact"> Sans contact</label>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Autre mécanisme / précision</label>
+          <input id="mechOther" type="text">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Antécédents d’entorse (détaillé)</h3>
+        <div class="grid g4">
+          <div class="field">
+            <label>ATCD entorse</label>
+            <select id="hxSprain">
+              <option value="">—</option>
+              <option>Non</option>
+              <option>Oui</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nombre estimé</label>
+            <input id="hxCount" type="number" min="0">
+          </div>
+          <div class="field">
+            <label>Côté des ATCD</label>
+            <select id="hxSide">
+              <option value="">—</option>
+              <option>Gauche</option>
+              <option>Droite</option>
+              <option>Bilatéral</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Instabilité antérieure ressentie</label>
+            <select id="hxInstab">
+              <option value="">—</option>
+              <option>Non</option>
+              <option>Oui</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="panel" data-step-panel="3">
+      <h2>Étape 3 — Triage (bloc dépliable, non bloquant)</h2>
+
+      <details open>
+        <summary>Triage pré-ROAST (Ottawa / syndesmose) <span class="help-q" title="Bloc facultatif, non bloquant">?</span></summary>
+        <div style="margin-top:10px">
+          <div class="card">
+            <h3>Ottawa Rules</h3>
+            <div class="grid g4">
+              <div class="field"><label>Douleur malléolaire</label><select id="ottPainMalleolar"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Bord post. malléole latérale sensible</label><select id="ottLatMall"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Bord post. malléole médiale sensible</label><select id="ottMedMall"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Base M5 sensible</label><select id="ottM5"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Naviculaire sensible</label><select id="ottNav"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Capable 4 pas</label><select id="ott4steps"><option></option><option>Oui</option><option>Non</option></select></div>
+              <div class="field"><label>Boiterie</label><select id="ottLimp"><option></option><option>Aucune</option><option>Légère</option><option>Modérée</option><option>Importante</option></select></div>
+              <div class="field"><label>Conclusion auto Ottawa</label><input id="ottConclusionAuto" type="text" readonly></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Syndesmose</h3>
+            <div class="grid g3">
+              <div class="field"><label>Palpation syndesmose</label><select id="synPalp"><option></option><option>Positif</option><option>Négatif</option></select></div>
+              <div class="field"><label>Squeeze test</label><select id="synSqueeze"><option></option><option>Positif</option><option>Négatif</option></select></div>
+              <div class="field"><label>ER test</label><select id="synER"><option></option><option>Positif</option><option>Négatif</option></select></div>
+            </div>
+            <div class="grid g3" style="margin-top:8px">
+              <div class="field"><label>DF-compression test</label><select id="synDfComp"><option></option><option>Positif</option><option>Négatif</option></select></div>
+              <div class="field"><label>Douleur syndesmose EVA (optionnel)</label><input id="synPain" type="number" min="0" max="10" step="0.5"></div>
+              <div class="field"><label>Localisation douleur syndesmose (texte)</label><input id="synLocation" type="text"></div>
+            </div>
+            <div class="field" style="margin-top:8px">
+              <label>Conclusion auto syndesmose</label>
+              <input id="synConclusionAuto" type="text" readonly>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Conclusion triage (texte libre)</h3>
+            <div class="field">
+              <label>Conclusion / orientation</label>
+              <textarea id="triageFreeConclusion" placeholder="Ex : suspicion syndesmose, prudence, avis médical..."></textarea>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="panel" data-step-panel="4">
+      <h2>Étape 4 — Douleur, œdème, ROM, arthrocinématique</h2>
+
+      <div class="card">
+        <h3>Douleur EVA 0–10</h3>
+        <div class="grid g4">
+          <div class="field"><label>Repos</label><input class="pain" data-pain="repos" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Appui</label><input class="pain" data-pain="appui" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Marche</label><input class="pain" data-pain="marche" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Course</label><input class="pain" data-pain="course" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Saut</label><input class="pain" data-pain="saut" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Douleur actuelle</label><input class="pain" data-pain="actuelle" type="number" min="0" max="10" step="0.5"></div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Localisation douleur (cases + texte libre)</label>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Antéro-latérale"> Antéro-latérale</label>
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Latérale"> Latérale</label>
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Médiale"> Médiale</label>
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Postérieure"> Postérieure</label>
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Syndesmose"> Syndesmose</label>
+            <label class="check-item"><input type="checkbox" class="painLoc" value="Diffuse"> Diffuse</label>
+          </div>
+          <input id="painLocFree" type="text" placeholder="Précision libre">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Œdème (comparatif)</h3>
+        <div class="grid g4">
+          <div class="field"><label>Figure-of-eight côté lésé (cm)</label><input id="edemaLesion" type="number" step="0.1"></div>
+          <div class="field"><label>Figure-of-eight côté sain (cm)</label><input id="edemaHealthy" type="number" step="0.1"></div>
+          <div class="field"><label>Delta auto (lésé - sain)</label><input id="edemaDelta" type="text" readonly></div>
+          <div class="field"><label>Interprétation auto</label><input id="edemaFlag" type="text" readonly></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>ROM — Weight-Bearing Lunge Test <span class="help-q" title="Mesure en cm et/ou en degrés, 2 côtés">?</span></h3>
+        <div class="grid g4">
+          <div class="field"><label>Lunge côté lésé (cm)</label><input id="lungeCmLesion" type="number" step="0.1"></div>
+          <div class="field"><label>Lunge côté sain (cm)</label><input id="lungeCmHealthy" type="number" step="0.1"></div>
+          <div class="field"><label>Delta cm</label><input id="lungeCmDelta" type="text" readonly></div>
+          <div class="field"><label>Interprétation cm</label><input id="lungeCmFlag" type="text" readonly></div>
+        </div>
+        <div class="grid g4" style="margin-top:8px">
+          <div class="field"><label>Lunge côté lésé (°)</label><input id="lungeDegLesion" type="number" step="0.1"></div>
+          <div class="field"><label>Lunge côté sain (°)</label><input id="lungeDegHealthy" type="number" step="0.1"></div>
+          <div class="field"><label>Delta °</label><input id="lungeDegDelta" type="text" readonly></div>
+          <div class="field"><label>Note ROM</label><input id="lungeNote" type="text" placeholder="Qualité / douleur / fin de course"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Arthrocinématique — Posterior talar glide</h3>
+        <div class="grid g4">
+          <div class="field"><label>Lésé (qualitatif)</label>
+            <select id="glideLesionQual">
+              <option value=""></option><option>Normal</option><option>Hypomobile</option><option>Hypermobile</option>
+            </select>
+          </div>
+          <div class="field"><label>Sain (qualitatif)</label>
+            <select id="glideHealthyQual">
+              <option value=""></option><option>Normal</option><option>Hypomobile</option><option>Hypermobile</option>
+            </select>
+          </div>
+          <div class="field"><label>Douleur lésé (EVA)</label><input id="glideLesionPain" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Douleur sain (EVA)</label><input id="glideHealthyPain" type="number" min="0" max="10" step="0.5"></div>
+        </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field"><label>Mesure / description comparative</label><input id="glideMeasureText" type="text" placeholder="Ex : glide post diminué à gauche"></div>
+          <div class="field"><label>Commentaire</label><input id="glideComment" type="text"></div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="panel" data-step-panel="5">
+      <h2>Étape 5 — Force HHD (tout skippable)</h2>
+
+      <div class="card">
+        <h3>HHD cheville (DF / PF / INV / EV) <span class="help-q" title="1 à 3 essais. Le calcul prend la meilleure valeur disponible.">?</span></h3>
+        <div class="help" id="hhdUnitLabel">Unité actuelle : kgf</div>
+        <div class="table-wrap" style="margin-top:8px">
+          <table id="hhdTable">
+            <thead>
+              <tr>
+                <th>Mouvement</th>
+                <th>Make/Break</th>
+                <th>NR</th>
+                <th>Motif NR</th>
+                <th>Lésé E1</th>
+                <th>Lésé E2</th>
+                <th>Lésé E3</th>
+                <th>Douleur L</th>
+                <th>Sain E1</th>
+                <th>Sain E2</th>
+                <th>Sain E3</th>
+                <th>Douleur S</th>
+                <th>Retenu L</th>
+                <th>Retenu S</th>
+                <th>Delta</th>
+                <th>LSI %</th>
+              </tr>
+            </thead>
+            <tbody id="hhdRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <details>
+        <summary>Bloc proximal optionnel — Abducteurs de hanche</summary>
+        <div class="card" style="margin-top:8px;margin-bottom:0">
+          <div class="table-wrap">
+            <table id="hhdHipTable">
+              <thead>
+                <tr>
+                  <th>Test</th>
+                  <th>Make/Break</th>
+                  <th>NR</th>
+                  <th>Motif NR</th>
+                  <th>Lésé E1</th>
+                  <th>Lésé E2</th>
+                  <th>Lésé E3</th>
+                  <th>Douleur L</th>
+                  <th>Sain E1</th>
+                  <th>Sain E2</th>
+                  <th>Sain E3</th>
+                  <th>Douleur S</th>
+                  <th>Retenu L</th>
+                  <th>Retenu S</th>
+                  <th>Delta</th>
+                  <th>LSI %</th>
+                </tr>
+              </thead>
+              <tbody id="hhdHipRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="panel" data-step-panel="6">
+      <h2>Étape 6 — Équilibre (statique + dynamique préparé)</h2>
+
+      <div class="card">
+        <h3>Équilibre statique (30 s, comparatif) <span class="help-q" title="V1 : EO et EC sur surface stable, nombre d’erreurs">?</span></h3>
+        <div class="grid g4">
+          <div class="field"><label>EO stable – erreurs lésé (30s)</label><input id="balEO_L" type="number" min="0"></div>
+          <div class="field"><label>EO stable – erreurs sain (30s)</label><input id="balEO_S" type="number" min="0"></div>
+          <div class="field"><label>Delta EO (L-S)</label><input id="balEO_Delta" type="text" readonly></div>
+          <div class="field"><label>Commentaire EO</label><input id="balEO_Comment" type="text"></div>
+        </div>
+        <div class="grid g4" style="margin-top:8px">
+          <div class="field"><label>EC stable – erreurs lésé (30s)</label><input id="balEC_L" type="number" min="0"></div>
+          <div class="field"><label>EC stable – erreurs sain (30s)</label><input id="balEC_S" type="number" min="0"></div>
+          <div class="field"><label>Delta EC (L-S)</label><input id="balEC_Delta" type="text" readonly></div>
+          <div class="field"><label>Commentaire EC</label><input id="balEC_Comment" type="text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Équilibre dynamique (préparé V1, organisation à affiner)</h3>
+        <div class="grid g4">
+          <div class="field"><label>Type</label>
+            <select id="dynType">
+              <option></option>
+              <option>Y-Balance 3 directions</option>
+              <option>SEBT</option>
+              <option>Mini-SEBT</option>
+            </select>
+          </div>
+          <div class="field"><label>Longueur MI (cm) optionnel</label><input id="dynLimbLen" type="number" step="0.1"></div>
+          <div class="field"><label>Score composite (optionnel)</label><input id="dynComposite" type="number" step="0.1"></div>
+          <div class="field"><label>Asymétrie notable (texte)</label><input id="dynAsymText" type="text"></div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire qualité contrôle (genou/hanche/cheville)</label>
+          <textarea id="dynQualComment"></textarea>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="panel" data-step-panel="7">
+      <h2>Étape 7 — Marche, activité, Quick FAAM, synthèse</h2>
+
+      <div class="card">
+        <h3>Marche (gradation : absent / léger / modéré / sévère)</h3>
+        <div class="grid g4">
+          <div class="field"><label>Boiterie antalgique</label><select id="gaitLimp"><option></option><option>Absent</option><option>Léger</option><option>Modéré</option><option>Sévère</option></select></div>
+          <div class="field"><label>Temps d’appui réduit</label><select id="gaitStance"><option></option><option>Absent</option><option>Léger</option><option>Modéré</option><option>Sévère</option></select></div>
+          <div class="field"><label>Évitement DF</label><select id="gaitDFavoid"><option></option><option>Absent</option><option>Léger</option><option>Modéré</option><option>Sévère</option></select></div>
+          <div class="field"><label>Rotation externe de fuite</label><select id="gaitER"><option></option><option>Absent</option><option>Léger</option><option>Modéré</option><option>Sévère</option></select></div>
+        </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field"><label>Pas raccourci</label><select id="gaitShortStep"><option></option><option>Absent</option><option>Léger</option><option>Modéré</option><option>Sévère</option></select></div>
+          <div class="field"><label>Autre observation marche</label><input id="gaitOther" type="text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Course légère (phase avancée, optionnel)</h3>
+        <div class="grid g4">
+          <div class="field"><label>Réalisée</label><select id="runDone"><option></option><option>Non réalisée</option><option>Réalisée</option></select></div>
+          <div class="field"><label>Douleur course EVA</label><input id="runPain" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Qualité course</label><select id="runQuality"><option></option><option>Correcte</option><option>Altérée</option><option>Très altérée</option></select></div>
+          <div class="field"><label>Commentaire</label><input id="runComment" type="text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Niveau d’activité</h3>
+        <div class="grid g4">
+          <div class="field"><label>Sport / discipline</label><input id="actSport" type="text"></div>
+          <div class="field"><label>Niveau</label><select id="actLevel"><option></option><option>Vie quotidienne</option><option>Loisir</option><option>Compétition</option></select></div>
+          <div class="field"><label>Volume hebdo</label><input id="actVolume" type="text" placeholder="ex. 3 séances / 4h"></div>
+          <div class="field"><label>Poste / rôle</label><input id="actRole" type="text"></div>
+        </div>
+        <div class="grid g3" style="margin-top:8px">
+          <div class="field"><label>Échéance de reprise</label><input id="actReturnDate" type="date"></div>
+          <div class="field"><label>Tegner (optionnel)</label><input id="actTegner" type="number" min="0" max="10"></div>
+          <div class="field"><label>Objectif formulé</label><input id="actGoal" type="text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Quick FAAM (intégration détaillée à compléter)</h3>
+        <div class="grid g4">
+          <div class="field"><label>Score brut (optionnel)</label><input id="faamRaw" type="number" step="1"></div>
+          <div class="field"><label>Score % (optionnel)</label><input id="faamPct" type="number" step="0.1"></div>
+          <div class="field"><label>Lien / référence / QR (texte)</label><input id="faamRef" type="text" placeholder="Tu ajouteras ton QR / lien plus tard"></div>
+          <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Synthèse automatique</h3>
+        <div class="field">
+          <label>Conclusion générée (modifiable)</label>
+          <textarea id="autoSummary" style="min-height:120px"></textarea>
+        </div>
+        <div class="row">
+          <button id="btnRefreshSummary" type="button">Recalculer la synthèse</button>
+          <span class="help">La synthèse se met aussi à jour automatiquement.</span>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="ghost" data-step-jump="1">Retour début</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Zone imprimable pour export PDF -->
+  <div id="printSummary"></div>
+
+  <script src="./app.js"></script>
 </body>
 </html>
