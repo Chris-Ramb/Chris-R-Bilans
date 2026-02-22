@@ -752,7 +752,14 @@
             ${rowKV("Course légère", [d.run.done, d.run.pain && `EVA ${d.run.pain}`, d.run.quality, d.run.comment].filter(Boolean).join(" | "))}
             ${rowKV("Activité", [d.activity.sport, d.activity.level, d.activity.volume, d.activity.role].filter(Boolean).join(" | "))}
             ${rowKV("Échéance / Tegner / Objectif", [d.activity.returnDate, d.activity.tegner && `Tegner ${d.activity.tegner}`, d.activity.goal].filter(Boolean).join(" | "))}
-            ${rowKV("Quick FAAM", [d.faam.raw && `Brut ${d.faam.raw}`, d.faam.pct && `% ${d.faam.pct}`, d.faam.ref, d.faam.comment].filter(Boolean).join(" | "))}
+                        ${rowKV("Quick FAAM", [
+              d.faam.rawR && `Droite ${d.faam.rawR}`,
+              d.faam.pctR && `Droite % ${d.faam.pctR}`,
+              d.faam.rawL && `Gauche ${d.faam.rawL}`,
+              d.faam.pctL && `Gauche % ${d.faam.pctL}`,
+              d.faam.source,
+              d.faam.comment
+            ].filter(Boolean).join(" | "))}
           </tbody>
         </table>
       </div>
