@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Q‑FAAM‑F — Droite & Gauche (calcul local)</title>
+
+<style id="back-sommaire-fixed">
+  .back-sommaire-fixed{
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: 10px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.16);
+    background: rgba(255,255,255,.94);
+    color: #0f172a;
+    text-decoration: none;
+    font: 700 13px/1.1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    box-shadow: 0 8px 18px rgba(15,23,42,.12);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .back-sommaire-fixed:hover{ background:#fff; }
+  .back-sommaire-fixed:focus{ outline: 3px solid rgba(59,130,246,.35); outline-offset: 2px; }
+  @media (max-width: 420px){
+    .back-sommaire-fixed{ padding: 8px 10px; font-size: 12px; left: 8px; top: calc(env(safe-area-inset-top, 0px) + 8px); }
+  }
+</style>
+
+</head>
+<body>
+<a class="back-sommaire-fixed" href="../" aria-label="Retour au sommaire">← Retour au sommaire</a>
+
+
+<div class="qfaamf-wrap">
+  <h2>Q‑FAAM‑F — Questionnaire pied/cheville (droite & gauche)</h2>
+
+  <p class="qfaamf-consigne">
+    Merci de répondre à chaque question en donnant la réponse qui décrit le mieux votre état au cours de la semaine passée (une seule réponse par cheville).
+    Si l’activité en question est limitée par autre chose que votre pied ou votre cheville, choisissez <strong>N/A</strong> (non applicable).
+  </p>
+
+  <div class="qfaamf-legend">
+    <div><span class="badge">4</span> Pas de difficulté</div>
+    <div><span class="badge">3</span> Difficulté légère</div>
+    <div><span class="badge">2</span> Difficulté modérée</div>
+    <div><span class="badge">1</span> Difficulté sévère</div>
+    <div><span class="badge">0</span> Incapable de le faire</div>
+    <div><span class="badge na">N/A</span> Non applicable</div>
+  </div>
+
+  <div id="qfaamfForm" class="qfaamf-form"></div>
+
+  <div class="qfaamf-actions">
+    <button type="button" id="qfaamfCalc">Afficher mon score</button>
+    <button type="button" id="qfaamfCopy" class="secondary" disabled>Copier mes scores</button>
+    <button type="button" id="qfaamfReset" class="secondary">Réinitialiser</button>
+  </div>
+
+  <div id="qfaamfMsg" class="qfaamf-msg" aria-live="polite"></div>
+
+  <div id="qfaamfResults" class="qfaamf-results" style="display:none;">
+    <h3>Résultats</h3>
+    <div class="cards">
+      <div class="card">
+        <h4>Cheville droite</h4>
+        <div id="resRight"></div>
+      </div>
+      <div class="card">
+        <h4>Cheville gauche</h4>
+        <div id="resLeft"></div>
+      </div>
+    </div>
+    <div class="qfaamf-final" id="finalLine" style="display:none;"></div>
+    <p class="qfaamf-note">
+      Merci de communiquer ces scores à votre praticien.
+    </p>
+  </div>
+
+  <hr class="qfaamf-hr" />
+
+  <p class="qfaamf-attrib">
+    Attribution : Q‑FAAM‑F (12 items) reproduit/adapté d’après Saliba I. et al., <em>Journal of Experimental Orthopaedics</em> (2026), licence CC BY 4.0.
+  </p>
+</div>
+
+<style>
+  .qfaamf-wrap{max-width:900px;margin:0 auto;padding:12px 10px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .qfaamf-consigne{background:#f6f7f8;border-left:4px solid #d0d3d6;padding:10px 12px;border-radius:6px}
+  .qfaamf-legend{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 18px}
+  .qfaamf-legend > div{background:#fafafa;border:1px solid #e6e7e9;border-radius:999px;padding:6px 10px;font-size:14px}
+  .badge{display:inline-block;min-width:22px;text-align:center;border-radius:6px;padding:2px 6px;margin-right:6px;background:#111;color:#fff;font-weight:700;font-size:12px}
+  .badge.na{background:#666}
+  .qfaamf-form{display:flex;flex-direction:column;gap:12px}
+  .qfaamf-item{border:1px solid #e6e7e9;border-radius:10px;padding:12px;background:#fff}
+  .qfaamf-item h4{margin:0 0 10px;font-size:16px}
+  .qfaamf-row{display:flex;gap:12px;flex-wrap:wrap}
+  .qfaamf-col{flex:1 1 260px}
+  label{display:block;font-size:13px;margin-bottom:6px;color:#333}
+  select{width:100%;padding:10px;border-radius:8px;border:1px solid #cfd3d7;background:#fff}
+  .qfaamf-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  button{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;background:#111;color:#fff;font-weight:700}
+  button.secondary{background:#e6e7e9;color:#111}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .qfaamf-msg{margin-top:10px;font-size:14px}
+  .qfaamf-results{margin-top:16px;background:#f6f7f8;border:1px solid #e6e7e9;border-radius:12px;padding:12px}
+  .cards{display:flex;gap:12px;flex-wrap:wrap}
+  .card{flex:1 1 260px;background:#fff;border:1px solid #e6e7e9;border-radius:12px;padding:12px}
+  .qfaamf-final{margin-top:12px;background:#fff;border:1px dashed #cfd3d7;border-radius:10px;padding:10px;font-weight:800}
+  .qfaamf-note{margin-top:10px;font-weight:700}
+  .qfaamf-hr{margin:18px 0;border:none;border-top:1px solid #e6e7e9}
+  .qfaamf-attrib{font-size:12px;color:#555}
+</style>
+
+<script>
+(function(){
+  const items = [
+    "Monter une pente",
+    "Descendre une pente",
+    "Marcher sur un terrain irrégulier",
+    "Monter et descendre d’un trottoir",
+    "Réaliser vos activités de loisirs",
+    "Courir",
+    "Sauter",
+    "Se réceptionner d’un saut",
+    "Démarrer et s’arrêter rapidement",
+    "Faire des changements de direction rapides",
+    "Réaliser votre activité sportive sans modifier votre comportement (maîtrise)",
+    "Pratiquer votre sport aussi longtemps que vous le souhaitez"
+  ];
+
+  const options = [
+    {v:"4", t:"4 — Pas de difficulté"},
+    {v:"3", t:"3 — Difficulté légère"},
+    {v:"2", t:"2 — Difficulté modérée"},
+    {v:"1", t:"1 — Difficulté sévère"},
+    {v:"0", t:"0 — Incapable de le faire"},
+    {v:"NA", t:"N/A — Non applicable"}
+  ];
+
+  const form = document.getElementById("qfaamfForm");
+
+  function makeSelect(id){
+    const sel = document.createElement("select");
+    sel.id = id;
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "— Choisir —";
+    sel.appendChild(ph);
+    options.forEach(o=>{
+      const opt=document.createElement("option");
+      opt.value=o.v; opt.textContent=o.t;
+      sel.appendChild(opt);
+    });
+    return sel;
+  }
+
+  items.forEach((label, idx)=>{
+    const block = document.createElement("div");
+    block.className = "qfaamf-item";
+    block.innerHTML = `<h4>${idx+1}. ${label}</h4>`;
+    const row = document.createElement("div");
+    row.className = "qfaamf-row";
+
+    const colR = document.createElement("div");
+    colR.className = "qfaamf-col";
+    const labR = document.createElement("label");
+    labR.htmlFor = `r_${idx}`;
+    labR.textContent = "Cheville droite";
+    colR.appendChild(labR);
+    colR.appendChild(makeSelect(`r_${idx}`));
+
+    const colL = document.createElement("div");
+    colL.className = "qfaamf-col";
+    const labL = document.createElement("label");
+    labL.htmlFor = `l_${idx}`;
+    labL.textContent = "Cheville gauche";
+    colL.appendChild(labL);
+    colL.appendChild(makeSelect(`l_${idx}`));
+
+    row.appendChild(colR);
+    row.appendChild(colL);
+    block.appendChild(row);
+    form.appendChild(block);
+  });
+
+  function round1(x){ return Math.round(x*10)/10; }
+
+  function compute(sidePrefix){
+    let points = 0;
+    let answered = 0; // hors NA
+    let missing = 0;
+
+    for(let i=0;i<items.length;i++){
+      const v = document.getElementById(`${sidePrefix}_${i}`).value;
+      if(v === "") { missing++; continue; }
+      if(v === "NA") { continue; }
+      answered++;
+      points += parseInt(v,10);
+    }
+
+    const max = answered * 4;
+    const pct = (answered===0) ? null : round1((points / max) * 100);
+    return {points, answered, max, pct, missing};
+  }
+
+  function renderResult(res){
+    if(res.missing>0){
+      return `<p><strong>Il manque ${res.missing} réponse(s).</strong> Merci de compléter toutes les questions (ou choisir N/A).</p>`;
+    }
+    if(res.answered===0){
+      return `<p><strong>Score non calculable</strong> : toutes les réponses sont N/A.</p>`;
+    }
+    return `
+      <p><strong>Score :</strong> ${res.points} / ${res.max}</p>
+      <p><strong>Score (%) :</strong> ${res.pct} / 100</p>
+      <p style="font-size:12px;color:#555">Calcul : somme des items / (4 × nombre d’items non N/A) × 100.</p>
+    `;
+  }
+
+  const msg = document.getElementById("qfaamfMsg");
+  const results = document.getElementById("qfaamfResults");
+  const resRight = document.getElementById("resRight");
+  const resLeft = document.getElementById("resLeft");
+  const copyBtn = document.getElementById("qfaamfCopy");
+  const finalLine = document.getElementById("finalLine");
+
+  let lastSummary = "";
+
+  async function copyText(text){
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    }catch(e){}
+    try{
+      window.prompt("Copiez ce texte :", text);
+      return true;
+    }catch(e){}
+    return false;
+  }
+
+  document.getElementById("qfaamfCalc").addEventListener("click", ()=>{
+    msg.textContent = "";
+    copyBtn.disabled = true;
+    finalLine.style.display = "none";
+    finalLine.textContent = "";
+    lastSummary = "";
+
+    const R = compute("r");
+    const L = compute("l");
+
+    const hasMissing = (R.missing>0 || L.missing>0);
+    resRight.innerHTML = renderResult(R);
+    resLeft.innerHTML  = renderResult(L);
+
+    results.style.display = "block";
+
+    if(hasMissing){
+      msg.textContent = "Certaines réponses sont manquantes. Merci de tout compléter (ou N/A).";
+      return;
+    }
+    if(R.answered===0 && L.answered===0){
+      msg.textContent = "Les deux chevilles sont entièrement N/A : score non calculable.";
+      return;
+    }
+
+    const rTxt = (R.answered===0) ? "Droite: non calculable (tout N/A)" : `Droite: ${R.points}/${R.max} (${R.pct}%)`;
+    const lTxt = (L.answered===0) ? "Gauche: non calculable (tout N/A)" : `Gauche: ${L.points}/${L.max} (${L.pct}%)`;
+    lastSummary = `Q‑FAAM‑F — ${rTxt} ; ${lTxt}`;
+
+    finalLine.textContent = lastSummary;
+    finalLine.style.display = "block";
+    copyBtn.disabled = false;
+  });
+
+  copyBtn.addEventListener("click", async ()=>{
+    if(!lastSummary) return;
+    const ok = await copyText(lastSummary);
+    msg.textContent = ok ? "Scores copiés." : "Impossible de copier automatiquement.";
+  });
+
+  document.getElementById("qfaamfReset").addEventListener("click", ()=>{
+    for(let i=0;i<items.length;i++){
+      document.getElementById(`r_${i}`).value="";
+      document.getElementById(`l_${i}`).value="";
+    }
+    msg.textContent="";
+    results.style.display="none";
+    copyBtn.disabled = true;
+    finalLine.style.display = "none";
+    finalLine.textContent = "";
+    lastSummary = "";
+  });
+})();
+</script>
+
+</body>
+</html>
