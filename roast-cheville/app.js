@@ -882,6 +882,8 @@
     updateLunge();
     updateBalanceStatic();
     refreshAutoSummary();
+    bindQfaam();
+    updateQfaamQr();
     registerServiceWorker();
   }
 
