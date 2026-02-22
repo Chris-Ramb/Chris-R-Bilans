@@ -494,7 +494,11 @@
     // Free triage text appended if present
     const triageFree = safeText($("triageFreeConclusion").value);
     if (triageFree) messages.push(`- Note triage: ${triageFree}`);
-
+    const faamR = safeText($("faamPctR")?.value);
+    const faamL = safeText($("faamPctL")?.value);
+    if (faamR || faamL) {
+      messages.push(`- Q-FAAM-F: ${faamR ? `Droite ${faamR}%` : ""}${faamR && faamL ? " ; " : ""}${faamL ? `Gauche ${faamL}%` : ""}.`);
+    }
     if (!messages.length) {
       $("autoSummary").value = "Aucune donnée suffisante pour générer une synthèse automatique.";
       return;
