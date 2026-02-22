@@ -621,14 +621,41 @@
       </div>
 
       <div class="card">
-        <h3>Quick FAAM (intégration détaillée à compléter)</h3>
-        <div class="grid g4">
-          <div class="field"><label>Score brut (optionnel)</label><input id="faamRaw" type="number" step="1"></div>
-          <div class="field"><label>Score % (optionnel)</label><input id="faamPct" type="number" step="0.1"></div>
-          <div class="field"><label>Lien / référence / QR (texte)</label><input id="faamRef" type="text" placeholder="Tu ajouteras ton QR / lien plus tard"></div>
-          <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
+  <h3>Quick FAAM (patient smartphone via QR)</h3>
+
+  <div class="grid g4">
+    <div class="field"><label>Score Droite brut</label><input id="faamRawR" type="text" placeholder="ex. 42/48"></div>
+    <div class="field"><label>Score Droite %</label><input id="faamPctR" type="number" step="0.1"></div>
+    <div class="field"><label>Score Gauche brut</label><input id="faamRawL" type="text" placeholder="ex. 48/48"></div>
+    <div class="field"><label>Score Gauche %</label><input id="faamPctL" type="number" step="0.1"></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:8px">
+    <div class="field">
+      <label>Coller le résultat copié depuis le smartphone</label>
+      <input id="faamPaste" type="text" placeholder="QFAAMF | Code:... | Droite:... | DroitePct:... | Gauche:... | GauchePct:...">
+      <div class="help">Le patient clique “Copier mes scores”, puis tu colles ici → les champs se remplissent automatiquement.</div>
+    </div>
+
+    <div style="border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff;">
+      <div style="font-weight:600; margin-bottom:6px;">QR patient (interface uniquement)</div>
+      <div class="help" style="margin-bottom:8px;">Le QR ouvre le Q-FAAM-F avec code patient / âge / côté / Jx / date.</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <img id="qfaamQrImg" alt="QR Q-FAAM-F" style="width:140px; height:140px; border:1px solid var(--line); border-radius:8px; background:#fff;">
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <a id="qfaamLink" href="#" target="_blank" rel="noopener" style="display:inline-block; text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--text);">Ouvrir le Q-FAAM-F</a>
+          <button id="btnRefreshQfaamQr" type="button">Mettre à jour le QR</button>
+          <div class="help">Le PDF ROAST n’affichera pas ce QR (uniquement les résultats saisis).</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:8px">
+    <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
+    <div class="field"><label>Source</label><input id="faamSource" type="text" value="Q-FAAM-F smartphone via QR"></div>
+  </div>
+</div>
 
       <div class="card">
         <h3>Synthèse automatique</h3>
