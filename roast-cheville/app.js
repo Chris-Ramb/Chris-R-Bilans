@@ -333,7 +333,87 @@
     const map = { "Absent": 0, "Léger": 1, "Modéré": 2, "Sévère": 3 };
     return map[v] ?? null;
   }
+  function getQfaamUrl() {
+    const origin = window.location.origin;
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    // ex: /Chris-R-Bilans/roast-cheville/
+    const repo = pathParts[0] || "Chris-R-Bilans";
+    const base = `${origin}/${repo}/q-faam-f/`;
 
+    const p = new URLSearchParams();
+    const code = safeText($("patientCode")?.value);
+    const age = safeText($("patientAge")?.value);
+    const side = safeText($("sideLesion")?.value);
+    const jx = safeText($("jxDisplay")?.value);
+    const date = safeText($("evalDate")?.value);
+
+    if (code) p.set("code", code);
+    if (age) p.set("age", age);
+    if (side) p.set("side", side);
+    if (jx) p.set("jx", jx);
+    if (date) p.set("date", date);
+
+    return `${base}${p.toString() ? "?" + p.toString() : ""}`;
+  }
+
+  function updateQfaamQr() {
+    const link = $("qfaamLink");
+    const img = $("qfaamQrImg");
+    if (!link || !img) return;
+
+    const url = getQfaamUrl();
+    link.href = url;
+
+    // Génération du QR via service web (simple/rapide)
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
+  }
+
+  function parseQfaamPasteAndFill() {
+    const input = $("faamPaste");
+    if (!input) return;
+    const txt = safeText(input.value);
+    if (!txt) return;
+
+    const get = (label) => {
+      const re = new RegExp(`${label}:([^|]+)`, "i");
+      const m = txt.match(re);
+      return m ? m[1].trim() : "";
+    };
+
+    const rawR = get("Droite");
+    const pctR = get("DroitePct");
+    const rawL = get("Gauche");
+    const pctL = get("GauchePct");
+
+    if (rawR && $("faamRawR")) $("faamRawR").value = rawR;
+    if (pctR && $("faamPctR")) $("faamPctR").value = pctR;
+    if (rawL && $("faamRawL")) $("faamRawL").value = rawL;
+    if (pctL && $("faamPctL")) $("faamPctL").value = pctL;
+
+    refreshAutoSummary();
+  }
+
+  function bindQfaam() {
+    const watchedIds = ["patientCode", "patientAge", "sideLesion", "evalDate", "traumaDate"];
+    watchedIds.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener("input", updateQfaamQr);
+      el.addEventListener("change", () => {
+        computeJx();
+        updateQfaamQr();
+      });
+    });
+
+    if ($("btnRefreshQfaamQr")) {
+      $("btnRefreshQfaamQr").addEventListener("click", updateQfaamQr);
+    }
+
+    if ($("faamPaste")) {
+      $("faamPaste").addEventListener("change", parseQfaamPasteAndFill);
+      $("faamPaste").addEventListener("blur", parseQfaamPasteAndFill);
+    }
+  }
   function refreshAutoSummary() {
     const thPain = parseNum($("thPain")?.value) ?? 5; // thPain may not exist if removed, safe fallback
     const lsiThr = parseNum($("thLsi").value) ?? 90;
