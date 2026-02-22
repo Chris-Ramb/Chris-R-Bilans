@@ -119,6 +119,29 @@
 
 <script>
 (function(){
+    // --- Contexte transmis par le QR (paramètres URL) ---
+  const params = new URLSearchParams(window.location.search);
+  const ctx = {
+    code: params.get("code") || "",
+    age: params.get("age") || "",
+    side: params.get("side") || "",
+    jx: params.get("jx") || "",
+    date: params.get("date") || ""
+  };
+
+  const ctxHeader = document.getElementById("ctxHeader");
+  const ctxParts = [
+    ctx.code ? `Code patient : ${ctx.code}` : "",
+    ctx.age ? `Âge : ${ctx.age}` : "",
+    ctx.side ? `Côté lésé : ${ctx.side}` : "",
+    ctx.jx ? `${ctx.jx}` : "",
+    ctx.date ? `Date bilan : ${ctx.date}` : ""
+  ].filter(Boolean);
+
+  if (ctxParts.length) {
+    ctxHeader.style.display = "block";
+    ctxHeader.textContent = ctxParts.join(" • ");
+  }
   const items = [
     "Monter une pente",
     "Descendre une pente",
