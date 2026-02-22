@@ -1,1 +1,11 @@
-{}
+{
+  "name": "ROAST Cheville - Bilan",
+  "short_name": "ROAST Cheville",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#1f2937",
+  "lang": "fr",
+  "description": "Bilan ROAST cheville initial et suivi, local sans sauvegarde."
+}
