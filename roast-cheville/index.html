@@ -138,7 +138,7 @@
         <button class="step-btn" data-step="3">3. Triage</button>
         <button class="step-btn" data-step="4">4. Douleur / œdème</button>
         <button class="step-btn" data-step="5">5. ROM & Arthro</button>
-        <button class="step-btn" data-step="6">6. Force HHD</button>
+        <button class="step-btn" data-step="6">6. Force</button>
         <button class="step-btn" data-step="7">7. Équilibre</button>
         <button class="step-btn" data-step="8">8. Marche / Synthèse</button>
       </div>
@@ -162,7 +162,7 @@
         <h3>Réglages cliniques (modifiables)</h3>
         <div class="grid g4">
           <div class="field">
-            <label>Unité HHD</label>
+            <label>Unité force</label>
             <select id="hhdUnit">
               <option value="kgf" selected>kgf</option>
               <option value="N">N</option>
@@ -468,68 +468,9 @@
 
     <!-- STEP 6 -->
     <section class="panel" data-step-panel="6">
-      <h2>Étape 6 — Force HHD (tout skippable)</h2>
+      <h2>Étape 6 — Force</h2>
 
-      <div class="card">
-        <h3>HHD cheville (DF / PF / INV / EV) <span class="help-q" title="1 à 3 essais. Le calcul prend la meilleure valeur disponible.">?</span></h3>
-        <div class="help" id="hhdUnitLabel">Unité actuelle : kgf</div>
-        <div class="table-wrap" style="margin-top:8px">
-          <table id="hhdTable">
-            <thead>
-              <tr>
-                <th>Mouvement</th>
-                <th>Make/Break</th>
-                <th>NR</th>
-                <th>Motif NR</th>
-                <th>Lésé E1</th>
-                <th>Lésé E2</th>
-                <th>Lésé E3</th>
-                <th>Douleur L</th>
-                <th>Sain E1</th>
-                <th>Sain E2</th>
-                <th>Sain E3</th>
-                <th>Douleur S</th>
-                <th>Retenu L</th>
-                <th>Retenu S</th>
-                <th>Delta</th>
-                <th>LSI %</th>
-              </tr>
-            </thead>
-            <tbody id="hhdRows"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <details>
-        <summary>Bloc proximal optionnel — Abducteurs de hanche</summary>
-        <div class="card" style="margin-top:8px;margin-bottom:0">
-          <div class="table-wrap">
-            <table id="hhdHipTable">
-              <thead>
-                <tr>
-                  <th>Test</th>
-                  <th>Make/Break</th>
-                  <th>NR</th>
-                  <th>Motif NR</th>
-                  <th>Lésé E1</th>
-                  <th>Lésé E2</th>
-                  <th>Lésé E3</th>
-                  <th>Douleur L</th>
-                  <th>Sain E1</th>
-                  <th>Sain E2</th>
-                  <th>Sain E3</th>
-                  <th>Douleur S</th>
-                  <th>Retenu L</th>
-                  <th>Retenu S</th>
-                  <th>Delta</th>
-                  <th>LSI %</th>
-                </tr>
-              </thead>
-              <tbody id="hhdHipRows"></tbody>
-            </table>
-          </div>
-        </div>
-      </details>
+      <div id="forceContainer"></div>
 
       <div class="wizard-footer">
         <button data-prev>Précédent</button>
@@ -689,9 +630,7 @@
     </section>
   </div>
 
-  <!-- Zone imprimable pour export PDF -->
   <div id="printSummary"></div>
-
   <script src="./app.js"></script>
 </body>
 </html>
