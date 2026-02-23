@@ -705,6 +705,13 @@ hxInstab: $("hxInstab").value,
           <tbody>
             ${rowKV("Ottawa auto", d.triage.ottConclusionAuto)}
             ${rowKV("Syndesmose auto", d.triage.synConclusionAuto)}
+           ${rowKV("Antécédents", [
+  d.hxSprain && `ATCD entorse: ${d.hxSprain}`,
+  d.hxCount && `Nb: ${d.hxCount}`,
+  d.hxSide && `Côté: ${d.hxSide}`,
+  d.hxInstab && `Instabilité: ${d.hxInstab}`,
+  d.hxFree
+].filter(Boolean).join(" | "))}
             ${rowKV("Conclusion triage (libre)", d.triage.triageFreeConclusion)}
           </tbody>
         </table>
