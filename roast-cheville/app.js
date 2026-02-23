@@ -7,12 +7,15 @@
   let currentStep = 1;
   let isDirty = false;
 
-  const hhdMovements = ["DF", "PF", "INV", "EV"];
-  const hipMovements = ["ABD hanche"];
+  const forceDefs = [
+    { key: "inv", label: "Inverseurs" },
+    { key: "ev", label: "Éverseurs" },
+    { key: "df", label: "Flexion dorsale" },
+    { key: "toeFlex", label: "Fléchisseurs des orteils" },
+    { key: "halluxFlex", label: "Fléchisseur du GO" }
+  ];
 
-  function markDirty() {
-    isDirty = true;
-  }
+  function markDirty() { isDirty = true; }
 
   function parseNum(v) {
     if (v === null || v === undefined || v === "") return null;
@@ -31,6 +34,36 @@
 
   function checkedValues(selector) {
     return $$(selector).filter(el => el.checked).map(el => el.value);
+  }
+
+  function bestOf(values) {
+    const nums = values.map(parseNum).filter(v => v !== null);
+    if (!nums.length) return null;
+    return Math.max(...nums);
+  }
+
+  function getLesionSide() {
+    return $("sideLesion")?.value || "";
+  }
+
+  function getSideLabels() {
+    const lesion = getLesionSide();
+    let right = "Droite";
+    let left = "Gauche";
+    if (lesion === "Droite") right = "Droite (lésé)";
+    if (lesion === "Gauche") left = "Gauche (lésé)";
+    if (lesion === "Bilatéral") {
+      right = "Droite (lésé)";
+      left = "Gauche (lésé)";
+    }
+    return { right, left, lesion };
+  }
+
+  function getLesionHealthyValues(rightVal, leftVal) {
+    const lesion = getLesionSide();
+    if (lesion === "Droite") return { lesionVal: rightVal, healthyVal: leftVal, unilateral: true };
+    if (lesion === "Gauche") return { lesionVal: leftVal, healthyVal: rightVal, unilateral: true };
+    return { lesionVal: null, healthyVal: null, unilateral: false };
   }
 
   function initDates() {
@@ -56,13 +89,9 @@
     const diffMs = e - t;
     const days = Math.floor(diffMs / 86400000);
 
-    if (!Number.isFinite(days)) {
-      out.value = "";
-    } else if (days >= 0) {
-      out.value = `J${days}`;
-    } else {
-      out.value = `J${days} (date bilan < trauma)`;
-    }
+    if (!Number.isFinite(days)) out.value = "";
+    else if (days >= 0) out.value = `J${days}`;
+    else out.value = `J${days} (date bilan < trauma)`;
   }
 
   function goToStep(step) {
@@ -111,9 +140,16 @@
     if (["lungeCmLesion", "lungeCmHealthy", "thLungeCm", "lungeDegLesion", "lungeDegHealthy"].includes(id)) updateLunge();
     if (["balEO_L", "balEO_S", "balEC_L", "balEC_S"].includes(id)) updateBalanceStatic();
 
-    if (target.closest("#hhdTable") || target.closest("#hhdHipTable") || id === "hhdUnit" || id === "thLsi") {
-      updateHhdUnitLabel();
-      recalcAllHhd();
+    if (
+      target.closest('[data-force-table]') ||
+      target.closest("#forceContainer") ||
+      ["hhdUnit","thLsi","sideLesion","calfStdRight","calfStdLeft","calfModRight","calfModLeft"].includes(id)
+    ) {
+      updateForceUnitLabel();
+      updateForceLabels();
+      recalcAllForceTables();
+      recalcCalfRaisePair("std");
+      recalcCalfRaisePair("mod");
     }
 
     if (target.closest(".app") && !target.closest("#printSummary")) {
@@ -151,8 +187,8 @@
     const thr = parseNum($("thEdema")?.value) ?? 1;
 
     if (l === null || s === null) {
-      if ($("edemaDelta")) $("edemaDelta").value = "";
-      if ($("edemaFlag")) $("edemaFlag").value = "";
+      $("edemaDelta").value = "";
+      $("edemaFlag").value = "";
       return;
     }
 
@@ -177,11 +213,7 @@
 
     const ldeg = parseNum($("lungeDegLesion")?.value);
     const sdeg = parseNum($("lungeDegHealthy")?.value);
-    if (ldeg !== null && sdeg !== null) {
-      $("lungeDegDelta").value = fmtNum(ldeg - sdeg, 1);
-    } else {
-      $("lungeDegDelta").value = "";
-    }
+    $("lungeDegDelta").value = (ldeg !== null && sdeg !== null) ? fmtNum(ldeg - sdeg, 1) : "";
   }
 
   function updateBalanceStatic() {
@@ -191,147 +223,362 @@
     $("balEC_Delta").value = (ecL !== null && ecS !== null) ? fmtNum(ecL - ecS, 0) : "";
   }
 
-  function hhdRowHTML(name, prefix) {
+  // ===== FORCE UI =====
+  function forceTableHTML(def) {
     return `
-      <tr data-hhd-row data-prefix="${prefix}" data-name="${name}">
-        <td>${name}</td>
-        <td>
-          <select data-role="mode">
-            <option>Make</option>
-            <option>Break</option>
-          </select>
-        </td>
-        <td class="tiny"><input type="checkbox" data-role="nr"></td>
-        <td><input type="text" data-role="nrReason" placeholder="douleur / temps / matériel"></td>
+      <div class="card" data-force-block="${def.key}">
+        <h3>${def.label}</h3>
+        <div class="table-wrap">
+          <table data-force-table="${def.key}" data-force-label="${def.label}">
+            <thead>
+              <tr>
+                <th>Make/Break</th>
+                <th>NR</th>
+                <th>Motif NR</th>
+                <th><span data-force-side="right"></span> E1</th>
+                <th><span data-force-side="right"></span> E2</th>
+                <th><span data-force-side="right"></span> E3</th>
+                <th>Douleur <span data-force-side-short="right"></span></th>
+                <th><span data-force-side="left"></span> E1</th>
+                <th><span data-force-side="left"></span> E2</th>
+                <th><span data-force-side="left"></span> E3</th>
+                <th>Douleur <span data-force-side-short="left"></span></th>
+                <th>Retenu <span data-force-side-short="right"></span></th>
+                <th>Retenu <span data-force-side-short="left"></span></th>
+                <th data-force-delta-head>Delta</th>
+                <th data-force-lsi-head>LSI %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <select data-role="mode">
+                    <option>Make</option>
+                    <option>Break</option>
+                  </select>
+                </td>
+                <td><input type="checkbox" data-role="nr"></td>
+                <td><input type="text" data-role="nrReason" placeholder="douleur / temps / matériel"></td>
 
-        <td><input class="num" type="number" step="0.1" data-role="l1"></td>
-        <td><input class="num" type="number" step="0.1" data-role="l2"></td>
-        <td><input class="num" type="number" step="0.1" data-role="l3"></td>
-        <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="lpain"></td>
+                <td><input class="num" type="number" step="0.1" data-role="r1"></td>
+                <td><input class="num" type="number" step="0.1" data-role="r2"></td>
+                <td><input class="num" type="number" step="0.1" data-role="r3"></td>
+                <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="rpain"></td>
 
-        <td><input class="num" type="number" step="0.1" data-role="s1"></td>
-        <td><input class="num" type="number" step="0.1" data-role="s2"></td>
-        <td><input class="num" type="number" step="0.1" data-role="s3"></td>
-        <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="spain"></td>
+                <td><input class="num" type="number" step="0.1" data-role="l1"></td>
+                <td><input class="num" type="number" step="0.1" data-role="l2"></td>
+                <td><input class="num" type="number" step="0.1" data-role="l3"></td>
+                <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="lpain"></td>
 
-        <td class="calc" data-role="lbest"></td>
-        <td class="calc" data-role="sbest"></td>
-        <td class="calc" data-role="delta"></td>
-        <td class="calc" data-role="lsi"></td>
-      </tr>
+                <td class="calc" data-role="rbest"></td>
+                <td class="calc" data-role="lbest"></td>
+                <td class="calc" data-role="delta"></td>
+                <td class="calc" data-role="lsi"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire</label>
+          <textarea id="forceComment_${def.key}" data-force-comment-for="${def.key}"></textarea>
+        </div>
+      </div>
     `;
   }
 
-  function initHhdTables() {
-    $("hhdRows").innerHTML = hhdMovements.map(m => hhdRowHTML(m, "ankle")).join("");
-    $("hhdHipRows").innerHTML = hipMovements.map(m => hhdRowHTML(m, "hip")).join("");
-    updateHhdUnitLabel();
-    recalcAllHhd();
+  function tricepsBlockHTML() {
+    return `
+      <div class="card" data-force-block="triceps">
+        <h3>Triceps sural</h3>
+
+        <div style="font-weight:600; margin:4px 0 8px;">1) Single calf raise</div>
+        <div class="grid g4">
+          <div class="field">
+            <label><span data-force-side="right"></span> (nb)</label>
+            <input id="calfStdRight" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label><span data-force-side="left"></span> (nb)</label>
+            <input id="calfStdLeft" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label id="calfStdDeltaLabel">Delta</label>
+            <input id="calfStdDelta" type="text" readonly>
+          </div>
+          <div class="field">
+            <label id="calfStdLsiLabel">LSI %</label>
+            <input id="calfStdLsi" type="text" readonly>
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire single calf raise</label>
+          <textarea id="calfStdComment"></textarea>
+        </div>
+
+        <div style="font-weight:600; margin:12px 0 8px;">2) Single calf raise modifié</div>
+        <div class="grid g4">
+          <div class="field">
+            <label><span data-force-side="right"></span> (nb)</label>
+            <input id="calfModRight" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label><span data-force-side="left"></span> (nb)</label>
+            <input id="calfModLeft" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label id="calfModDeltaLabel">Delta</label>
+            <input id="calfModDelta" type="text" readonly>
+          </div>
+          <div class="field">
+            <label id="calfModLsiLabel">LSI %</label>
+            <input id="calfModLsi" type="text" readonly>
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire single calf raise modifié</label>
+          <textarea id="calfModComment"></textarea>
+        </div>
+
+        <div style="font-weight:600; margin:14px 0 8px;">3) Soléaire</div>
+        <div class="table-wrap">
+          <table data-force-table="soleus" data-force-label="Soléaire">
+            <thead>
+              <tr>
+                <th>Make/Break</th>
+                <th>NR</th>
+                <th>Motif NR</th>
+                <th><span data-force-side="right"></span> E1</th>
+                <th><span data-force-side="right"></span> E2</th>
+                <th><span data-force-side="right"></span> E3</th>
+                <th>Douleur <span data-force-side-short="right"></span></th>
+                <th><span data-force-side="left"></span> E1</th>
+                <th><span data-force-side="left"></span> E2</th>
+                <th><span data-force-side="left"></span> E3</th>
+                <th>Douleur <span data-force-side-short="left"></span></th>
+                <th>Retenu <span data-force-side-short="right"></span></th>
+                <th>Retenu <span data-force-side-short="left"></span></th>
+                <th data-force-delta-head>Delta</th>
+                <th data-force-lsi-head>LSI %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <select data-role="mode">
+                    <option>Make</option>
+                    <option>Break</option>
+                  </select>
+                </td>
+                <td><input type="checkbox" data-role="nr"></td>
+                <td><input type="text" data-role="nrReason" placeholder="douleur / temps / matériel"></td>
+
+                <td><input class="num" type="number" step="0.1" data-role="r1"></td>
+                <td><input class="num" type="number" step="0.1" data-role="r2"></td>
+                <td><input class="num" type="number" step="0.1" data-role="r3"></td>
+                <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="rpain"></td>
+
+                <td><input class="num" type="number" step="0.1" data-role="l1"></td>
+                <td><input class="num" type="number" step="0.1" data-role="l2"></td>
+                <td><input class="num" type="number" step="0.1" data-role="l3"></td>
+                <td><input class="tiny" type="number" min="0" max="10" step="0.5" data-role="lpain"></td>
+
+                <td class="calc" data-role="rbest"></td>
+                <td class="calc" data-role="lbest"></td>
+                <td class="calc" data-role="delta"></td>
+                <td class="calc" data-role="lsi"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire soléaire</label>
+          <textarea id="forceComment_soleus" data-force-comment-for="soleus"></textarea>
+        </div>
+      </div>
+    `;
   }
 
-  function bestOf(values) {
-    const nums = values.map(parseNum).filter(v => v !== null);
-    if (!nums.length) return null;
-    return Math.max(...nums);
+  function initForceSection() {
+    const container = $("forceContainer");
+    if (!container) return;
+
+    const unit = $("hhdUnit")?.value || "kgf";
+
+    const intro = `
+      <div class="card">
+        <h3>Paramètres de force</h3>
+        <div class="help" id="forceUnitLabel">Unité actuelle : ${unit}</div>
+        <div class="help" id="forceSideInfo">Le calcul du LSI utilise le côté lésé défini en étape 2.</div>
+      </div>
+    `;
+
+    container.innerHTML = intro + forceDefs.map(forceTableHTML).join("") + tricepsBlockHTML();
+
+    updateForceLabels();
+    recalcAllForceTables();
+    recalcCalfRaisePair("std");
+    recalcCalfRaisePair("mod");
   }
 
-  function recalcHhdTable(tableId) {
-    const table = $(tableId);
+  function updateForceUnitLabel() {
+    const unit = $("hhdUnit")?.value || "kgf";
+    if ($("forceUnitLabel")) $("forceUnitLabel").textContent = `Unité actuelle : ${unit}`;
+  }
+
+  function updateForceLabels() {
+    const labels = getSideLabels();
+
+    $$('[data-force-side="right"]').forEach(el => { el.textContent = labels.right; });
+    $$('[data-force-side="left"]').forEach(el => { el.textContent = labels.left; });
+
+    $$('[data-force-side-short="right"]').forEach(el => {
+      el.textContent = labels.right.includes("(lésé)") ? "D*" : "D";
+    });
+    $$('[data-force-side-short="left"]').forEach(el => {
+      el.textContent = labels.left.includes("(lésé)") ? "G*" : "G";
+    });
+
+    const deltaHead = (labels.lesion === "Droite" || labels.lesion === "Gauche")
+      ? "Delta (lésé - sain)"
+      : "Delta (Droite - Gauche)";
+
+    const lsiHead = (labels.lesion === "Droite" || labels.lesion === "Gauche")
+      ? "LSI % (lésé/sain)"
+      : (labels.lesion === "Bilatéral" ? "LSI % (NA bilatéral)" : "LSI %");
+
+    $$("[data-force-delta-head]").forEach(el => { el.textContent = deltaHead; });
+    $$("[data-force-lsi-head]").forEach(el => { el.textContent = lsiHead; });
+
+    if ($("calfStdDeltaLabel")) $("calfStdDeltaLabel").textContent = deltaHead;
+    if ($("calfModDeltaLabel")) $("calfModDeltaLabel").textContent = deltaHead;
+    if ($("calfStdLsiLabel")) $("calfStdLsiLabel").textContent = lsiHead;
+    if ($("calfModLsiLabel")) $("calfModLsiLabel").textContent = lsiHead;
+
+    if ($("forceSideInfo")) {
+      if (!labels.lesion) $("forceSideInfo").textContent = "Sélectionne un côté lésé en étape 2 pour activer le LSI.";
+      else if (labels.lesion === "Bilatéral") $("forceSideInfo").textContent = "Côté lésé = bilatéral : LSI non calculé (delta D-G uniquement).";
+      else $("forceSideInfo").textContent = "Le calcul du LSI utilise le côté lésé défini en étape 2.";
+    }
+  }
+
+  function recalcForceTable(table) {
+    if (!table) return;
     const lsiThr = parseNum($("thLsi")?.value) ?? 90;
+    const row = table.querySelector("tbody tr");
+    if (!row) return;
 
-    table.querySelectorAll("[data-hhd-row]").forEach(row => {
-      const nr = row.querySelector('[data-role="nr"]').checked;
+    const get = (role) => row.querySelector(`[data-role="${role}"]`);
+    const nr = get("nr").checked;
 
-      const inputsToDisable = row.querySelectorAll('input:not([data-role="nr"]), select');
-      inputsToDisable.forEach(el => {
-        if (el.dataset.role === "mode") return;
-        if (el.dataset.role === "nrReason") {
-          el.disabled = !nr;
-        } else if (["l1", "l2", "l3", "lpain", "s1", "s2", "s3", "spain"].includes(el.dataset.role)) {
-          el.disabled = nr;
-        }
-      });
+    ["r1","r2","r3","rpain","l1","l2","l3","lpain"].forEach(role => {
+      get(role).disabled = nr;
+    });
+    get("nrReason").disabled = !nr;
 
-      const lbestCell = row.querySelector('[data-role="lbest"]');
-      const sbestCell = row.querySelector('[data-role="sbest"]');
-      const deltaCell = row.querySelector('[data-role="delta"]');
-      const lsiCell = row.querySelector('[data-role="lsi"]');
+    if (nr) {
+      get("rbest").textContent = "NR";
+      get("lbest").textContent = "NR";
+      get("delta").textContent = "—";
+      get("lsi").textContent = "—";
+      get("lsi").style.color = "";
+      return;
+    }
 
-      if (nr) {
-        lbestCell.textContent = "NR";
-        sbestCell.textContent = "NR";
-        deltaCell.textContent = "—";
-        lsiCell.textContent = "—";
-        lsiCell.style.color = "";
-        return;
-      }
+    const rbest = bestOf([get("r1").value, get("r2").value, get("r3").value]);
+    const lbest = bestOf([get("l1").value, get("l2").value, get("l3").value]);
 
-      const lbest = bestOf([
-        row.querySelector('[data-role="l1"]').value,
-        row.querySelector('[data-role="l2"]').value,
-        row.querySelector('[data-role="l3"]').value
-      ]);
-      const sbest = bestOf([
-        row.querySelector('[data-role="s1"]').value,
-        row.querySelector('[data-role="s2"]').value,
-        row.querySelector('[data-role="s3"]').value
-      ]);
+    get("rbest").textContent = rbest !== null ? fmtNum(rbest, 1) : "";
+    get("lbest").textContent = lbest !== null ? fmtNum(lbest, 1) : "";
 
-      lbestCell.textContent = lbest !== null ? fmtNum(lbest, 1) : "";
-      sbestCell.textContent = sbest !== null ? fmtNum(sbest, 1) : "";
+    if (rbest !== null && lbest !== null) {
+      const lesion = getLesionSide();
+      const { lesionVal, healthyVal, unilateral } = getLesionHealthyValues(rbest, lbest);
 
-      if (lbest !== null && sbest !== null) {
-        const delta = lbest - sbest;
-        deltaCell.textContent = fmtNum(delta, 1);
-
-        if (sbest !== 0) {
-          const lsi = (lbest / sbest) * 100;
-          lsiCell.textContent = fmtNum(lsi, 0);
-          lsiCell.style.color = lsi < lsiThr ? "#d97706" : "#111827";
+      if (unilateral) {
+        get("delta").textContent = fmtNum(lesionVal - healthyVal, 1);
+        if (healthyVal && healthyVal !== 0) {
+          const lsi = (lesionVal / healthyVal) * 100;
+          get("lsi").textContent = fmtNum(lsi, 0);
+          get("lsi").style.color = lsi < lsiThr ? "#d97706" : "#111827";
         } else {
-          lsiCell.textContent = "NA";
-          lsiCell.style.color = "";
+          get("lsi").textContent = "NA";
+          get("lsi").style.color = "";
         }
       } else {
-        deltaCell.textContent = "";
-        lsiCell.textContent = "";
-        lsiCell.style.color = "";
+        get("delta").textContent = fmtNum(rbest - lbest, 1);
+        get("lsi").textContent = lesion === "Bilatéral" ? "NA" : "";
+        get("lsi").style.color = "";
       }
-    });
+    } else {
+      get("delta").textContent = "";
+      get("lsi").textContent = "";
+      get("lsi").style.color = "";
+    }
   }
 
-  function recalcAllHhd() {
-    recalcHhdTable("hhdTable");
-    recalcHhdTable("hhdHipTable");
+  function recalcAllForceTables() {
+    $$("[data-force-table]").forEach(recalcForceTable);
   }
 
-  function updateHhdUnitLabel() {
-    const u = $("hhdUnit")?.value || "kgf";
-    if ($("hhdUnitLabel")) $("hhdUnitLabel").textContent = `Unité actuelle : ${u}`;
+  function recalcCalfRaisePair(kind) {
+    const isStd = kind === "std";
+    const rightId = isStd ? "calfStdRight" : "calfModRight";
+    const leftId = isStd ? "calfStdLeft" : "calfModLeft";
+    const deltaId = isStd ? "calfStdDelta" : "calfModDelta";
+    const lsiId = isStd ? "calfStdLsi" : "calfModLsi";
+
+    const r = parseNum($(rightId)?.value);
+    const l = parseNum($(leftId)?.value);
+
+    if (r === null || l === null) {
+      $(deltaId).value = "";
+      $(lsiId).value = "";
+      return;
+    }
+
+    const lesion = getLesionSide();
+    const { lesionVal, healthyVal, unilateral } = getLesionHealthyValues(r, l);
+
+    if (unilateral) {
+      $(deltaId).value = fmtNum(lesionVal - healthyVal, 0);
+      if (healthyVal && healthyVal !== 0) {
+        $(lsiId).value = fmtNum((lesionVal / healthyVal) * 100, 0);
+      } else {
+        $(lsiId).value = "NA";
+      }
+    } else {
+      $(deltaId).value = fmtNum(r - l, 0);
+      $(lsiId).value = lesion === "Bilatéral" ? "NA" : "";
+    }
   }
 
-  function collectHhdRows(tableId) {
-    const rows = [];
-    $(tableId).querySelectorAll("[data-hhd-row]").forEach(row => {
-      const get = (r) => row.querySelector(`[data-role="${r}"]`);
-      rows.push({
-        movement: row.dataset.name,
+  function collectForceRows() {
+    return $$("[data-force-table]").map(table => {
+      const row = table.querySelector("tbody tr");
+      const get = (role) => row.querySelector(`[data-role="${role}"]`);
+      const key = table.dataset.forceTable;
+      const comment = $(`forceComment_${key}`)?.value || "";
+
+      return {
+        key,
+        test: table.dataset.forceLabel || "",
         mode: get("mode").value,
         nr: get("nr").checked,
         nrReason: get("nrReason").value,
+        r1: get("r1").value, r2: get("r2").value, r3: get("r3").value,
+        rpain: get("rpain").value,
         l1: get("l1").value, l2: get("l2").value, l3: get("l3").value,
         lpain: get("lpain").value,
-        s1: get("s1").value, s2: get("s2").value, s3: get("s3").value,
-        spain: get("spain").value,
-        lbest: row.querySelector('[data-role="lbest"]').textContent,
-        sbest: row.querySelector('[data-role="sbest"]').textContent,
-        delta: row.querySelector('[data-role="delta"]').textContent,
-        lsi: row.querySelector('[data-role="lsi"]').textContent
-      });
+        rbest: get("rbest").textContent,
+        lbest: get("lbest").textContent,
+        delta: get("delta").textContent,
+        lsi: get("lsi").textContent,
+        comment
+      };
     });
-    return rows;
   }
 
+  // ===== Quick FAAM =====
   function getQfaamUrl() {
     const origin = window.location.origin;
     const pathParts = window.location.pathname.split("/").filter(Boolean);
@@ -365,9 +612,7 @@
   }
 
   function parseQfaamPasteAndFill() {
-    const input = $("faamPaste");
-    if (!input) return;
-    const txt = safeText(input.value);
+    const txt = safeText($("faamPaste")?.value);
     if (!txt) return;
 
     const get = (label) => {
@@ -381,35 +626,27 @@
     const rawL = get("Gauche");
     const pctL = get("GauchePct");
 
-    if (rawR && $("faamRawR")) $("faamRawR").value = rawR;
-    if (pctR && $("faamPctR")) $("faamPctR").value = pctR;
-    if (rawL && $("faamRawL")) $("faamRawL").value = rawL;
-    if (pctL && $("faamPctL")) $("faamPctL").value = pctL;
+    if (rawR) $("faamRawR").value = rawR;
+    if (pctR) $("faamPctR").value = pctR;
+    if (rawL) $("faamRawL").value = rawL;
+    if (pctL) $("faamPctL").value = pctL;
 
     refreshAutoSummary();
   }
 
   function bindQfaam() {
-    const watchedIds = ["patientCode", "patientAge", "sideLesion", "evalDate", "traumaDate"];
-    watchedIds.forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      el.addEventListener("input", updateQfaamQr);
-      el.addEventListener("change", () => {
-        computeJx();
-        updateQfaamQr();
-      });
+    ["patientCode","patientAge","sideLesion","evalDate","traumaDate"].forEach(id => {
+      $(id)?.addEventListener("input", updateQfaamQr);
+      $(id)?.addEventListener("change", () => { computeJx(); updateQfaamQr(); });
     });
 
-    if ($("btnRefreshQfaamQr")) $("btnRefreshQfaamQr").addEventListener("click", updateQfaamQr);
-    if ($("faamPaste")) {
-      $("faamPaste").addEventListener("change", parseQfaamPasteAndFill);
-      $("faamPaste").addEventListener("blur", parseQfaamPasteAndFill);
-    }
+    $("btnRefreshQfaamQr")?.addEventListener("click", updateQfaamQr);
+    $("faamPaste")?.addEventListener("change", parseQfaamPasteAndFill);
+    $("faamPaste")?.addEventListener("blur", parseQfaamPasteAndFill);
   }
 
+  // ===== Synthèse auto =====
   function refreshAutoSummary() {
-    const thPain = parseNum($("thPain")?.value) ?? 5;
     const lsiThr = parseNum($("thLsi")?.value) ?? 90;
     const edemaThr = parseNum($("thEdema")?.value) ?? 1;
     const lungeThr = parseNum($("thLungeCm")?.value) ?? 2;
@@ -421,47 +658,62 @@
     if (ottAuto.includes("positif")) messages.push(`- Triage fracture: ${ottAuto}.`);
     if (synAuto.toLowerCase().includes("suspicion")) messages.push(`- Triage syndesmose: ${synAuto}.`);
 
-    const painFields = ["repos", "appui", "marche", "course", "saut", "actuelle"];
-    const painValues = painFields
+    const painKeys = ["repos","appui","marche","course","saut","actuelle"];
+    const painValues = painKeys
       .map(k => parseNum(document.querySelector(`.pain[data-pain="${k}"]`)?.value))
       .filter(v => v !== null);
     const painMax = painValues.length ? Math.max(...painValues) : null;
     if (painMax !== null) {
-      if (painMax >= thPain) messages.push(`- Douleur élevée (EVA max ${fmtNum(painMax, 0)}/10) : prudence sur la charge.`);
-      else messages.push(`- Douleur compatible avec progression graduée (EVA max ${fmtNum(painMax, 0)}/10).`);
+      messages.push(
+        painMax >= 5
+          ? `- Douleur élevée (EVA max ${fmtNum(painMax,0)}/10) : prudence sur la charge.`
+          : `- Douleur compatible avec progression graduée (EVA max ${fmtNum(painMax,0)}/10).`
+      );
     }
 
     const edemaDelta = parseNum($("edemaDelta")?.value);
     if (edemaDelta !== null) {
-      if (Math.abs(edemaDelta) >= edemaThr) messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta, 1)} cm (notable).`);
-      else messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta, 1)} cm (faible).`);
+      messages.push(
+        Math.abs(edemaDelta) >= edemaThr
+          ? `- Œdème: delta figure-of-eight ${fmtNum(edemaDelta,1)} cm (notable).`
+          : `- Œdème: delta figure-of-eight ${fmtNum(edemaDelta,1)} cm (faible).`
+      );
     }
 
     const lungeDelta = parseNum($("lungeCmDelta")?.value);
     if (lungeDelta !== null) {
-      if (Math.abs(lungeDelta) >= lungeThr) messages.push(`- ROM DF en charge: asymétrie lunge ${fmtNum(lungeDelta, 1)} cm.`);
-      else messages.push(`- ROM DF en charge: asymétrie lunge faible (${fmtNum(lungeDelta, 1)} cm).`);
+      messages.push(
+        Math.abs(lungeDelta) >= lungeThr
+          ? `- ROM DF en charge: asymétrie lunge ${fmtNum(lungeDelta,1)} cm.`
+          : `- ROM DF en charge: asymétrie lunge faible (${fmtNum(lungeDelta,1)} cm).`
+      );
     }
 
-    const ankleRows = collectHhdRows("hhdTable");
-    const deficits = ankleRows
-      .filter(r => !r.nr && r.lsi && r.lsi !== "NA")
-      .map(r => ({ m: r.movement, lsi: Number(r.lsi) }))
+    const forceRows = collectForceRows();
+    const deficits = forceRows
+      .filter(r => !r.nr && r.lsi && !["NA","—",""].includes(r.lsi))
+      .map(r => ({ test: r.test, lsi: Number(r.lsi) }))
       .filter(r => Number.isFinite(r.lsi) && r.lsi < lsiThr);
 
     if (deficits.length) {
-      const txt = deficits.map(d => `${d.m} ${Math.round(d.lsi)}%`).join(", ");
-      messages.push(`- Force HHD: déficits < ${lsiThr}% sur ${txt}.`);
-    } else if (ankleRows.some(r => !r.nr && r.lsi)) {
-      messages.push(`- Force HHD: pas de déficit majeur identifié selon seuil LSI < ${lsiThr}%.`);
+      messages.push(`- Force: déficits < ${lsiThr}% sur ${deficits.map(d => `${d.test} ${Math.round(d.lsi)}%`).join(", ")}.`);
+    } else if (forceRows.some(r => !r.nr && (r.rbest || r.lbest))) {
+      messages.push(`- Force: pas de déficit majeur identifié selon seuil LSI < ${lsiThr}% (si côté lésé renseigné).`);
     }
+
+    const calfParts = [];
+    const stdDelta = safeText($("calfStdDelta")?.value), stdLsi = safeText($("calfStdLsi")?.value);
+    const modDelta = safeText($("calfModDelta")?.value), modLsi = safeText($("calfModLsi")?.value);
+    if (stdDelta || stdLsi) calfParts.push(`single calf raise Δ ${stdDelta || "?"}${stdLsi ? ` / LSI ${stdLsi}%` : ""}`);
+    if (modDelta || modLsi) calfParts.push(`single calf raise modifié Δ ${modDelta || "?"}${modLsi ? ` / LSI ${modLsi}%` : ""}`);
+    if (calfParts.length) messages.push(`- Triceps sural: ${calfParts.join(" ; ")}.`);
 
     const eoDelta = parseNum($("balEO_Delta")?.value);
     const ecDelta = parseNum($("balEC_Delta")?.value);
     if (eoDelta !== null || ecDelta !== null) {
       const parts = [];
-      if (eoDelta !== null) parts.push(`EO delta erreurs ${fmtNum(eoDelta, 0)}`);
-      if (ecDelta !== null) parts.push(`EC delta erreurs ${fmtNum(ecDelta, 0)}`);
+      if (eoDelta !== null) parts.push(`EO delta erreurs ${fmtNum(eoDelta,0)}`);
+      if (ecDelta !== null) parts.push(`EC delta erreurs ${fmtNum(ecDelta,0)}`);
       messages.push(`- Équilibre statique: ${parts.join(" ; ")}.`);
     }
 
@@ -471,7 +723,7 @@
     const runDone = $("runDone")?.value;
     const runPain = parseNum($("runPain")?.value);
     if (runDone === "Réalisée") {
-      messages.push(`- Course légère réalisée${runPain !== null ? ` (douleur EVA ${fmtNum(runPain, 0)}/10)` : ""}.`);
+      messages.push(`- Course légère réalisée${runPain !== null ? ` (douleur EVA ${fmtNum(runPain,0)}/10)` : ""}.`);
     }
 
     const goal = safeText($("actGoal")?.value);
@@ -486,15 +738,12 @@
       messages.push(`- Q-FAAM-F: ${faamR ? `Droite ${faamR}%` : ""}${faamR && faamL ? " ; " : ""}${faamL ? `Gauche ${faamL}%` : ""}.`);
     }
 
-    if (!messages.length) {
-      $("autoSummary").value = "Aucune donnée suffisante pour générer une synthèse automatique.";
-      return;
-    }
-
-    const header = `Synthèse auto — ${new Date().toLocaleString("fr-FR")}\n`;
-    $("autoSummary").value = header + messages.join("\n");
+    $("autoSummary").value = messages.length
+      ? `Synthèse auto — ${new Date().toLocaleString("fr-FR")}\n` + messages.join("\n")
+      : "Aucune donnée suffisante pour générer une synthèse automatique.";
   }
 
+  // ===== Collecte =====
   function collectData() {
     return {
       mode: document.querySelector('input[name="appMode"]:checked')?.value || "",
@@ -517,20 +766,7 @@
       hxInstab: $("hxInstab")?.value || "",
 
       triage: {
-        ottPainMalleolar: $("ottPainMalleolar")?.value || "",
-        ottLatMall: $("ottLatMall")?.value || "",
-        ottMedMall: $("ottMedMall")?.value || "",
-        ottM5: $("ottM5")?.value || "",
-        ottNav: $("ottNav")?.value || "",
-        ott4steps: $("ott4steps")?.value || "",
-        ottLimp: $("ottLimp")?.value || "",
         ottConclusionAuto: $("ottConclusionAuto")?.value || "",
-        synPalp: $("synPalp")?.value || "",
-        synSqueeze: $("synSqueeze")?.value || "",
-        synER: $("synER")?.value || "",
-        synDfComp: $("synDfComp")?.value || "",
-        synPain: $("synPain")?.value || "",
-        synLocation: $("synLocation")?.value || "",
         synConclusionAuto: $("synConclusionAuto")?.value || "",
         triageFreeConclusion: $("triageFreeConclusion")?.value || "",
       },
@@ -542,7 +778,6 @@
         course: document.querySelector('.pain[data-pain="course"]')?.value || "",
         saut: document.querySelector('.pain[data-pain="saut"]')?.value || "",
         actuelle: document.querySelector('.pain[data-pain="actuelle"]')?.value || "",
-        locations: checkedValues(".painLoc"), // vide (plus de cases) mais sans erreur
         locationFree: $("painLocFree")?.value || "",
       },
 
@@ -550,13 +785,14 @@
         lesion: $("edemaLesion")?.value || "",
         healthy: $("edemaHealthy")?.value || "",
         delta: $("edemaDelta")?.value || "",
-        flag: $("edemaFlag")?.value || ""
       },
 
       lunge: {
-        cmL: $("lungeCmLesion")?.value || "", cmS: $("lungeCmHealthy")?.value || "",
-        cmDelta: $("lungeCmDelta")?.value || "", cmFlag: $("lungeCmFlag")?.value || "",
-        degL: $("lungeDegLesion")?.value || "", degS: $("lungeDegHealthy")?.value || "",
+        cmL: $("lungeCmLesion")?.value || "",
+        cmS: $("lungeCmHealthy")?.value || "",
+        cmDelta: $("lungeCmDelta")?.value || "",
+        degL: $("lungeDegLesion")?.value || "",
+        degS: $("lungeDegHealthy")?.value || "",
         degDelta: $("lungeDegDelta")?.value || "",
         note: $("lungeNote")?.value || ""
       },
@@ -570,8 +806,24 @@
         comment: $("glideComment")?.value || ""
       },
 
-      hhdAnkle: collectHhdRows("hhdTable"),
-      hhdHip: collectHhdRows("hhdHipTable"),
+      force: {
+        sideLesion: $("sideLesion")?.value || "",
+        rows: collectForceRows(),
+        calfStd: {
+          right: $("calfStdRight")?.value || "",
+          left: $("calfStdLeft")?.value || "",
+          delta: $("calfStdDelta")?.value || "",
+          lsi: $("calfStdLsi")?.value || "",
+          comment: $("calfStdComment")?.value || ""
+        },
+        calfMod: {
+          right: $("calfModRight")?.value || "",
+          left: $("calfModLeft")?.value || "",
+          delta: $("calfModDelta")?.value || "",
+          lsi: $("calfModLsi")?.value || "",
+          comment: $("calfModComment")?.value || ""
+        }
+      },
 
       balance: {
         eoL: $("balEO_L")?.value || "", eoS: $("balEO_S")?.value || "", eoDelta: $("balEO_Delta")?.value || "", eoComment: $("balEO_Comment")?.value || "",
@@ -580,7 +832,6 @@
 
       dyn: {
         type: $("dynType")?.value || "",
-        limbLen: $("dynLimbLen")?.value || "",
         composite: $("dynComposite")?.value || "",
         asym: $("dynAsymText")?.value || "",
         comment: $("dynQualComment")?.value || ""
@@ -617,7 +868,6 @@
         pctR: $("faamPctR")?.value || "",
         rawL: $("faamRawL")?.value || "",
         pctL: $("faamPctL")?.value || "",
-        paste: $("faamPaste")?.value || "",
         comment: $("faamComment")?.value || "",
         source: $("faamSource")?.value || ""
       },
@@ -630,22 +880,26 @@
     return `<tr><th style="width:35%">${label}</th><td>${value || ""}</td></tr>`;
   }
 
-  function hhdRowsToHTML(rows, unit) {
-    const visible = rows.filter(r => r.nr || r.lbest || r.sbest || r.l1 || r.s1);
-    if (!visible.length) return "<div>Aucune donnée HHD saisie.</div>";
+  function forceRowsToHTML(rows, sideLesion, unit) {
+    const visible = rows.filter(r => r.nr || r.rbest || r.lbest || r.r1 || r.l1 || r.comment);
+    if (!visible.length) return "<div>Aucune donnée de force saisie.</div>";
+
+    const rightHead = (sideLesion === "Droite" || sideLesion === "Bilatéral") ? "Droite (lésé)" : "Droite";
+    const leftHead = (sideLesion === "Gauche" || sideLesion === "Bilatéral") ? "Gauche (lésé)" : "Gauche";
 
     const trs = visible.map(r => `
       <tr>
-        <td>${r.movement}</td>
-        <td>${r.mode}</td>
+        <td>${r.test}</td>
+        <td>${r.mode || ""}</td>
         <td>${r.nr ? "NR" : ""}</td>
         <td>${r.nrReason || ""}</td>
+        <td>${r.rbest || ""}</td>
         <td>${r.lbest || ""}</td>
-        <td>${r.sbest || ""}</td>
         <td>${r.delta || ""}</td>
         <td>${r.lsi || ""}</td>
+        <td>${r.rpain || ""}</td>
         <td>${r.lpain || ""}</td>
-        <td>${r.spain || ""}</td>
+        <td>${(r.comment || "").replace(/</g,"&lt;")}</td>
       </tr>
     `).join("");
 
@@ -653,8 +907,11 @@
       <table>
         <thead>
           <tr>
-            <th>Mouvement</th><th>Test</th><th>NR</th><th>Motif</th>
-            <th>Retenu L (${unit})</th><th>Retenu S (${unit})</th><th>Delta</th><th>LSI %</th><th>Douleur L</th><th>Douleur S</th>
+            <th>Bloc</th><th>Mode</th><th>NR</th><th>Motif</th>
+            <th>Retenu ${rightHead} (${unit})</th>
+            <th>Retenu ${leftHead} (${unit})</th>
+            <th>Delta</th><th>LSI %</th>
+            <th>Douleur D</th><th>Douleur G</th><th>Commentaire</th>
           </tr>
         </thead>
         <tbody>${trs}</tbody>
@@ -675,7 +932,8 @@
 
     const consult = d.consultTypes.join(", ");
     const mech = [...d.mech, d.mechOther].filter(Boolean).join(", ");
-    const painLocs = [...d.pain.locations, d.pain.locationFree].filter(Boolean).join(", ");
+    const rightHead = (d.sideLesion === "Droite" || d.sideLesion === "Bilatéral") ? "Droite (lésé)" : "Droite";
+    const leftHead = (d.sideLesion === "Gauche" || d.sideLesion === "Bilatéral") ? "Gauche (lésé)" : "Gauche";
 
     const html = `
       <h1>ROAST Cheville — Bilan initial & suivi</h1>
@@ -688,79 +946,86 @@
 
       <div class="ps-card">
         <h2>Triage</h2>
-        <table>
-          <tbody>
-            ${rowKV("Ottawa auto", d.triage.ottConclusionAuto)}
-            ${rowKV("Syndesmose auto", d.triage.synConclusionAuto)}
-            ${rowKV("Antécédents", [
-              d.hxSprain && `ATCD entorse: ${d.hxSprain}`,
-              d.hxCount && `Nb: ${d.hxCount}`,
-              d.hxSide && `Côté: ${d.hxSide}`,
-              d.hxInstab && `Instabilité: ${d.hxInstab}`,
-              d.hxFree
-            ].filter(Boolean).join(" | "))}
-            ${rowKV("Conclusion triage (libre)", d.triage.triageFreeConclusion)}
-          </tbody>
-        </table>
+        <table><tbody>
+          ${rowKV("Ottawa auto", d.triage.ottConclusionAuto)}
+          ${rowKV("Syndesmose auto", d.triage.synConclusionAuto)}
+          ${rowKV("Antécédents", [
+            d.hxSprain && `ATCD entorse: ${d.hxSprain}`,
+            d.hxCount && `Nb: ${d.hxCount}`,
+            d.hxSide && `Côté: ${d.hxSide}`,
+            d.hxInstab && `Instabilité: ${d.hxInstab}`,
+            d.hxFree
+          ].filter(Boolean).join(" | "))}
+          ${rowKV("Conclusion triage", d.triage.triageFreeConclusion)}
+        </tbody></table>
       </div>
 
       <div class="ps-card">
         <h2>Douleur / œdème / ROM / Arthro</h2>
-        <table>
+        <table><tbody>
+          ${rowKV("Douleur repos / appui / marche", [d.pain.repos,d.pain.appui,d.pain.marche].filter(Boolean).join(" / "))}
+          ${rowKV("Douleur course / saut / actuelle", [d.pain.course,d.pain.saut,d.pain.actuelle].filter(Boolean).join(" / "))}
+          ${rowKV("Localisation douleur", d.pain.locationFree)}
+          ${rowKV("Figure-of-eight L / S / Delta (cm)", [d.edema.lesion,d.edema.healthy,d.edema.delta].filter(v=>v!=="").join(" / "))}
+          ${rowKV("Lunge cm L / S / Delta", [d.lunge.cmL,d.lunge.cmS,d.lunge.cmDelta].filter(v=>v!=="").join(" / "))}
+          ${rowKV("Lunge ° L / S / Delta", [d.lunge.degL,d.lunge.degS,d.lunge.degDelta].filter(v=>v!=="").join(" / "))}
+          ${rowKV("Note ROM", d.lunge.note)}
+          ${rowKV("Glide postérieur", [d.glide.measureText,d.glide.comment].filter(Boolean).join(" | "))}
+          ${rowKV("Glide quali L / S + EVA", `${d.glide.lesionQual || ""} (${d.glide.lesionPain || ""}) / ${d.glide.healthyQual || ""} (${d.glide.healthyPain || ""})`)}
+        </tbody></table>
+      </div>
+
+      <div class="ps-card">
+        <h2>Force (${d.unit})</h2>
+        <div style="font-size:11px; margin-bottom:6px;">Repères : ${rightHead} / ${leftHead}</div>
+        ${forceRowsToHTML(d.force.rows, d.sideLesion, d.unit)}
+        <table style="margin-top:8px">
           <tbody>
-            ${rowKV("Douleur repos / appui / marche", [d.pain.repos,d.pain.appui,d.pain.marche].filter(Boolean).join(" / "))}
-            ${rowKV("Douleur course / saut / actuelle", [d.pain.course,d.pain.saut,d.pain.actuelle].filter(Boolean).join(" / "))}
-            ${rowKV("Localisation douleur", painLocs)}
-            ${rowKV("Figure-of-eight L / S / Delta (cm)", [d.edema.lesion,d.edema.healthy,d.edema.delta].filter(v=>v!=="").join(" / "))}
-            ${rowKV("Lunge cm L / S / Delta", [d.lunge.cmL,d.lunge.cmS,d.lunge.cmDelta].filter(v=>v!=="").join(" / "))}
-            ${rowKV("Lunge ° L / S / Delta", [d.lunge.degL,d.lunge.degS,d.lunge.degDelta].filter(v=>v!=="").join(" / "))}
-            ${rowKV("Glide postérieur", [d.glide.measureText,d.glide.comment].filter(Boolean).join(" | "))}
-            ${rowKV("Glide quali L / S + EVA", `${d.glide.lesionQual || ""} (${d.glide.lesionPain || ""}) / ${d.glide.healthyQual || ""} (${d.glide.healthyPain || ""})`)}
+            ${rowKV("Single calf raise", [
+              `${rightHead}: ${d.force.calfStd.right || ""}`,
+              `${leftHead}: ${d.force.calfStd.left || ""}`,
+              d.force.calfStd.delta && `Delta: ${d.force.calfStd.delta}`,
+              d.force.calfStd.lsi && `LSI: ${d.force.calfStd.lsi}%`,
+              d.force.calfStd.comment
+            ].filter(Boolean).join(" | "))}
+            ${rowKV("Single calf raise modifié", [
+              `${rightHead}: ${d.force.calfMod.right || ""}`,
+              `${leftHead}: ${d.force.calfMod.left || ""}`,
+              d.force.calfMod.delta && `Delta: ${d.force.calfMod.delta}`,
+              d.force.calfMod.lsi && `LSI: ${d.force.calfMod.lsi}%`,
+              d.force.calfMod.comment
+            ].filter(Boolean).join(" | "))}
           </tbody>
         </table>
-      </div>
-
-      <div class="ps-card">
-        <h2>Force HHD cheville (${d.unit})</h2>
-        ${hhdRowsToHTML(d.hhdAnkle, d.unit)}
-      </div>
-
-      <div class="ps-card">
-        <h2>Bloc proximal HHD (${d.unit})</h2>
-        ${hhdRowsToHTML(d.hhdHip, d.unit)}
       </div>
 
       <div class="ps-card">
         <h2>Équilibre</h2>
-        <table>
-          <tbody>
-            ${rowKV("Statique EO (erreurs L / S / Delta)", [d.balance.eoL,d.balance.eoS,d.balance.eoDelta].filter(v=>v!=="").join(" / "))}
-            ${rowKV("Statique EC (erreurs L / S / Delta)", [d.balance.ecL,d.balance.ecS,d.balance.ecDelta].filter(v=>v!=="").join(" / "))}
-            ${rowKV("Commentaires EO/EC", [d.balance.eoComment,d.balance.ecComment].filter(Boolean).join(" | "))}
-            ${rowKV("Dynamique", [d.dyn.type,d.dyn.composite && `Composite ${d.dyn.composite}`,d.dyn.asym].filter(Boolean).join(" | "))}
-            ${rowKV("Qualité dynamique", d.dyn.comment)}
-          </tbody>
-        </table>
+        <table><tbody>
+          ${rowKV("Statique EO (erreurs L / S / Delta)", [d.balance.eoL,d.balance.eoS,d.balance.eoDelta].filter(v=>v!=="").join(" / "))}
+          ${rowKV("Statique EC (erreurs L / S / Delta)", [d.balance.ecL,d.balance.ecS,d.balance.ecDelta].filter(v=>v!=="").join(" / "))}
+          ${rowKV("Commentaires EO/EC", [d.balance.eoComment,d.balance.ecComment].filter(Boolean).join(" | "))}
+          ${rowKV("Dynamique", [d.dyn.type,d.dyn.composite && `Composite ${d.dyn.composite}`,d.dyn.asym].filter(Boolean).join(" | "))}
+          ${rowKV("Qualité dynamique", d.dyn.comment)}
+        </tbody></table>
       </div>
 
       <div class="ps-card">
         <h2>Marche / course / activité / PROM</h2>
-        <table>
-          <tbody>
-            ${rowKV("Marche", [d.gait.limp && `Boiterie ${d.gait.limp}`, d.gait.stance && `Appui ${d.gait.stance}`, d.gait.dfavoid && `DF ${d.gait.dfavoid}`, d.gait.er && `RE ${d.gait.er}`, d.gait.shortStep && `Pas ${d.gait.shortStep}`, d.gait.other].filter(Boolean).join(" | "))}
-            ${rowKV("Course légère", [d.run.done, d.run.pain && `EVA ${d.run.pain}`, d.run.quality, d.run.comment].filter(Boolean).join(" | "))}
-            ${rowKV("Activité", [d.activity.sport, d.activity.level, d.activity.volume, d.activity.role].filter(Boolean).join(" | "))}
-            ${rowKV("Échéance / Tegner / Objectif", [d.activity.returnDate, d.activity.tegner && `Tegner ${d.activity.tegner}`, d.activity.goal].filter(Boolean).join(" | "))}
-            ${rowKV("Quick FAAM", [
-              d.faam.rawR && `Droite ${d.faam.rawR}`,
-              d.faam.pctR && `Droite % ${d.faam.pctR}`,
-              d.faam.rawL && `Gauche ${d.faam.rawL}`,
-              d.faam.pctL && `Gauche % ${d.faam.pctL}`,
-              d.faam.source,
-              d.faam.comment
-            ].filter(Boolean).join(" | "))}
-          </tbody>
-        </table>
+        <table><tbody>
+          ${rowKV("Marche", [d.gait.limp && `Boiterie ${d.gait.limp}`, d.gait.stance && `Appui ${d.gait.stance}`, d.gait.dfavoid && `DF ${d.gait.dfavoid}`, d.gait.er && `RE ${d.gait.er}`, d.gait.shortStep && `Pas ${d.gait.shortStep}`, d.gait.other].filter(Boolean).join(" | "))}
+          ${rowKV("Course légère", [d.run.done, d.run.pain && `EVA ${d.run.pain}`, d.run.quality, d.run.comment].filter(Boolean).join(" | "))}
+          ${rowKV("Activité", [d.activity.sport, d.activity.level, d.activity.volume, d.activity.role].filter(Boolean).join(" | "))}
+          ${rowKV("Échéance / Tegner / Objectif", [d.activity.returnDate, d.activity.tegner && `Tegner ${d.activity.tegner}`, d.activity.goal].filter(Boolean).join(" | "))}
+          ${rowKV("Quick FAAM", [
+            d.faam.rawR && `Droite ${d.faam.rawR}`,
+            d.faam.pctR && `Droite % ${d.faam.pctR}`,
+            d.faam.rawL && `Gauche ${d.faam.rawL}`,
+            d.faam.pctL && `Gauche % ${d.faam.pctL}`,
+            d.faam.source,
+            d.faam.comment
+          ].filter(Boolean).join(" | "))}
+        </tbody></table>
       </div>
 
       <div class="ps-card">
@@ -777,9 +1042,7 @@
     buildPrintSummary();
     document.body.classList.add("print-summary");
     window.print();
-    setTimeout(() => {
-      document.body.classList.remove("print-summary");
-    }, 300);
+    setTimeout(() => document.body.classList.remove("print-summary"), 300);
     isDirty = false;
   }
 
@@ -791,27 +1054,23 @@
     if (askConfirm && !confirm("Effacer toutes les données du bilan en cours ?")) return;
 
     $$("input, select, textarea").forEach(el => {
-      if (el.type === "radio" || el.type === "checkbox") {
-        el.checked = false;
-      } else if (!el.readOnly) {
-        el.value = "";
-      }
+      if (el.type === "radio" || el.type === "checkbox") el.checked = false;
+      else if (!el.readOnly) el.value = "";
     });
 
     const modeRadio = document.querySelector('input[name="appMode"][value="ROAST cabinet"]');
     if (modeRadio) modeRadio.checked = true;
-    if ($("hhdUnit")) $("hhdUnit").value = "kgf";
-    if ($("thLsi")) $("thLsi").value = 90;
-    if ($("thEdema")) $("thEdema").value = 1;
-    if ($("thLungeCm")) $("thLungeCm").value = 2;
+    $("hhdUnit").value = "kgf";
+    $("thLsi").value = 90;
+    $("thEdema").value = 1;
+    $("thLungeCm").value = 2;
 
     ["ottConclusionAuto","synConclusionAuto","edemaDelta","edemaFlag","lungeCmDelta","lungeCmFlag","lungeDegDelta","balEO_Delta","balEC_Delta","jxDisplay"].forEach(id => {
       if ($(id)) $(id).value = "";
     });
 
-    initHhdTables();
+    initForceSection();
     initDates();
-
     updateOttawa();
     updateSyndesmose();
     updateEdema();
@@ -833,8 +1092,6 @@
   }
 
   function bindSpecifics() {
-    updateHhdUnitLabel();
-
     ["traumaDate","evalDate"].forEach(id => $(id)?.addEventListener("change", computeJx));
 
     ["ottPainMalleolar","ottLatMall","ottMedMall","ottM5","ottNav","ott4steps","ottLimp"].forEach(id => {
@@ -846,12 +1103,46 @@
       $(id)?.addEventListener("input", updateSyndesmose);
     });
 
-    $("hhdTable").addEventListener("input", () => { recalcAllHhd(); refreshAutoSummary(); });
-    $("hhdTable").addEventListener("change", () => { recalcAllHhd(); refreshAutoSummary(); });
-    $("hhdHipTable").addEventListener("input", () => { recalcAllHhd(); refreshAutoSummary(); });
-    $("hhdHipTable").addEventListener("change", () => { recalcAllHhd(); refreshAutoSummary(); });
+    $("forceContainer")?.addEventListener("input", (e) => {
+      const table = e.target.closest("[data-force-table]");
+      if (table) recalcForceTable(table);
+      if (["calfStdRight","calfStdLeft","calfModRight","calfModLeft"].includes(e.target.id)) {
+        recalcCalfRaisePair("std");
+        recalcCalfRaisePair("mod");
+      }
+      refreshAutoSummary();
+    });
 
-    $("hhdUnit").addEventListener("change", updateHhdUnitLabel);
+    $("forceContainer")?.addEventListener("change", (e) => {
+      const table = e.target.closest("[data-force-table]");
+      if (table) recalcForceTable(table);
+      if (["calfStdRight","calfStdLeft","calfModRight","calfModLeft"].includes(e.target.id)) {
+        recalcCalfRaisePair("std");
+        recalcCalfRaisePair("mod");
+      }
+      refreshAutoSummary();
+    });
+
+    $("hhdUnit")?.addEventListener("change", () => {
+      updateForceUnitLabel();
+      refreshAutoSummary();
+    });
+
+    $("thLsi")?.addEventListener("input", () => {
+      recalcAllForceTables();
+      recalcCalfRaisePair("std");
+      recalcCalfRaisePair("mod");
+      refreshAutoSummary();
+    });
+
+    $("sideLesion")?.addEventListener("change", () => {
+      updateForceLabels();
+      recalcAllForceTables();
+      recalcCalfRaisePair("std");
+      recalcCalfRaisePair("mod");
+      updateQfaamQr();
+      refreshAutoSummary();
+    });
 
     window.addEventListener("afterprint", () => {
       document.body.classList.remove("print-summary");
@@ -868,9 +1159,11 @@
     bindWizard();
     bindDirtyTracking();
     bindTopButtons();
-    initHhdTables();
+
+    initForceSection();
     bindSpecifics();
     bindQfaam();
+
     initDates();
     updateOttawa();
     updateSyndesmose();
@@ -879,6 +1172,7 @@
     updateBalanceStatic();
     refreshAutoSummary();
     updateQfaamQr();
+
     registerServiceWorker();
   }
 
