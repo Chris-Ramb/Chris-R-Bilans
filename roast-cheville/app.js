@@ -36,14 +36,15 @@
   function initDates() {
     const today = new Date();
     const iso = today.toISOString().slice(0, 10);
-    if (!$("evalDate").value) $("evalDate").value = iso;
+    if ($("evalDate") && !$("evalDate").value) $("evalDate").value = iso;
     computeJx();
   }
 
   function computeJx() {
-    const trauma = $("traumaDate").value;
-    const evalDate = $("evalDate").value;
+    const trauma = $("traumaDate")?.value;
+    const evalDate = $("evalDate")?.value;
     const out = $("jxDisplay");
+    if (!out) return;
 
     if (!trauma || !evalDate) {
       out.value = "";
@@ -65,7 +66,7 @@
   }
 
   function goToStep(step) {
-    currentStep = Math.max(1, Math.min(7, step));
+    currentStep = Math.max(1, Math.min(8, step));
     $$(".step-btn").forEach(btn => btn.classList.toggle("active", Number(btn.dataset.step) === currentStep));
     $$("[data-step-panel]").forEach(p => p.classList.toggle("active", Number(p.dataset.stepPanel) === currentStep));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -106,61 +107,65 @@
     if (id && id.startsWith("ott")) updateOttawa();
     if (id && id.startsWith("syn")) updateSyndesmose();
 
-    if (["edemaLesion","edemaHealthy","thEdema"].includes(id)) updateEdema();
-    if (["lungeCmLesion","lungeCmHealthy","thLungeCm","lungeDegLesion","lungeDegHealthy"].includes(id)) updateLunge();
-    if (["balEO_L","balEO_S","balEC_L","balEC_S"].includes(id)) updateBalanceStatic();
+    if (["edemaLesion", "edemaHealthy", "thEdema"].includes(id)) updateEdema();
+    if (["lungeCmLesion", "lungeCmHealthy", "thLungeCm", "lungeDegLesion", "lungeDegHealthy"].includes(id)) updateLunge();
+    if (["balEO_L", "balEO_S", "balEC_L", "balEC_S"].includes(id)) updateBalanceStatic();
 
     if (target.closest("#hhdTable") || target.closest("#hhdHipTable") || id === "hhdUnit" || id === "thLsi") {
       updateHhdUnitLabel();
       recalcAllHhd();
     }
 
-    if (
-      target.closest(".app") &&
-      !target.closest("#printSummary")
-    ) {
+    if (target.closest(".app") && !target.closest("#printSummary")) {
       refreshAutoSummary();
     }
   }
 
   function updateOttawa() {
-    const yes = (id) => $(id).value === "Oui";
-    const can4 = $("ott4steps").value;
-    // Ottawa simplifié : douleur malléolaire + (sensibilité zones / incapacité 4 pas)
+    const yes = (id) => $(id)?.value === "Oui";
+    const can4 = $("ott4steps")?.value;
     const positive =
       (yes("ottPainMalleolar") && (yes("ottLatMall") || yes("ottMedMall") || can4 === "Non")) ||
       yes("ottM5") || yes("ottNav") || can4 === "Non";
 
-    $("ottConclusionAuto").value = positive
-      ? "Ottawa positif → imagerie / triage médical à considérer"
-      : "Ottawa non concluant ou négatif (selon données saisies)";
+    if ($("ottConclusionAuto")) {
+      $("ottConclusionAuto").value = positive
+        ? "Ottawa positif → imagerie / triage médical à considérer"
+        : "Ottawa non concluant ou négatif (selon données saisies)";
+    }
   }
 
   function updateSyndesmose() {
-    const pos = ["synPalp","synSqueeze","synER","synDfComp"].some(id => $(id).value === "Positif");
-    $("synConclusionAuto").value = pos
-      ? "Suspicion syndesmose (tests positifs) → prudence / avis médical"
-      : "Pas d’argument fort de syndesmose (selon données saisies)";
+    const ids = ["synPalp", "synSqueeze", "synER", "synDfComp"];
+    const pos = ids.some(id => $(id)?.value === "Positif");
+    if ($("synConclusionAuto")) {
+      $("synConclusionAuto").value = pos
+        ? "Suspicion syndesmose (tests positifs) → prudence / avis médical"
+        : "Pas d’argument fort de syndesmose (selon données saisies)";
+    }
   }
 
   function updateEdema() {
-    const l = parseNum($("edemaLesion").value);
-    const s = parseNum($("edemaHealthy").value);
-    const thr = parseNum($("thEdema").value) ?? 1;
+    const l = parseNum($("edemaLesion")?.value);
+    const s = parseNum($("edemaHealthy")?.value);
+    const thr = parseNum($("thEdema")?.value) ?? 1;
+
     if (l === null || s === null) {
-      $("edemaDelta").value = "";
-      $("edemaFlag").value = "";
+      if ($("edemaDelta")) $("edemaDelta").value = "";
+      if ($("edemaFlag")) $("edemaFlag").value = "";
       return;
     }
+
     const d = l - s;
     $("edemaDelta").value = fmtNum(d, 1);
     $("edemaFlag").value = Math.abs(d) >= thr ? "Delta notable" : "Delta faible";
   }
 
   function updateLunge() {
-    const lcm = parseNum($("lungeCmLesion").value);
-    const scm = parseNum($("lungeCmHealthy").value);
-    const thr = parseNum($("thLungeCm").value) ?? 2;
+    const lcm = parseNum($("lungeCmLesion")?.value);
+    const scm = parseNum($("lungeCmHealthy")?.value);
+    const thr = parseNum($("thLungeCm")?.value) ?? 2;
+
     if (lcm !== null && scm !== null) {
       const d = lcm - scm;
       $("lungeCmDelta").value = fmtNum(d, 1);
@@ -170,8 +175,8 @@
       $("lungeCmFlag").value = "";
     }
 
-    const ldeg = parseNum($("lungeDegLesion").value);
-    const sdeg = parseNum($("lungeDegHealthy").value);
+    const ldeg = parseNum($("lungeDegLesion")?.value);
+    const sdeg = parseNum($("lungeDegHealthy")?.value);
     if (ldeg !== null && sdeg !== null) {
       $("lungeDegDelta").value = fmtNum(ldeg - sdeg, 1);
     } else {
@@ -180,8 +185,8 @@
   }
 
   function updateBalanceStatic() {
-    const eoL = parseNum($("balEO_L").value), eoS = parseNum($("balEO_S").value);
-    const ecL = parseNum($("balEC_L").value), ecS = parseNum($("balEC_S").value);
+    const eoL = parseNum($("balEO_L")?.value), eoS = parseNum($("balEO_S")?.value);
+    const ecL = parseNum($("balEC_L")?.value), ecS = parseNum($("balEC_S")?.value);
     $("balEO_Delta").value = (eoL !== null && eoS !== null) ? fmtNum(eoL - eoS, 0) : "";
     $("balEC_Delta").value = (ecL !== null && ecS !== null) ? fmtNum(ecL - ecS, 0) : "";
   }
@@ -232,7 +237,7 @@
 
   function recalcHhdTable(tableId) {
     const table = $(tableId);
-    const lsiThr = parseNum($("thLsi").value) ?? 90;
+    const lsiThr = parseNum($("thLsi")?.value) ?? 90;
 
     table.querySelectorAll("[data-hhd-row]").forEach(row => {
       const nr = row.querySelector('[data-role="nr"]').checked;
@@ -242,10 +247,8 @@
         if (el.dataset.role === "mode") return;
         if (el.dataset.role === "nrReason") {
           el.disabled = !nr;
-        } else if (el.dataset.role !== "nr") {
-          if (["l1","l2","l3","lpain","s1","s2","s3","spain"].includes(el.dataset.role)) {
-            el.disabled = nr;
-          }
+        } else if (["l1", "l2", "l3", "lpain", "s1", "s2", "s3", "spain"].includes(el.dataset.role)) {
+          el.disabled = nr;
         }
       });
 
@@ -303,8 +306,8 @@
   }
 
   function updateHhdUnitLabel() {
-    const u = $("hhdUnit").value;
-    $("hhdUnitLabel").textContent = `Unité actuelle : ${u}`;
+    const u = $("hhdUnit")?.value || "kgf";
+    if ($("hhdUnitLabel")) $("hhdUnitLabel").textContent = `Unité actuelle : ${u}`;
   }
 
   function collectHhdRows(tableId) {
@@ -329,14 +332,9 @@
     return rows;
   }
 
-  function levelTextToScore(v) {
-    const map = { "Absent": 0, "Léger": 1, "Modéré": 2, "Sévère": 3 };
-    return map[v] ?? null;
-  }
   function getQfaamUrl() {
     const origin = window.location.origin;
     const pathParts = window.location.pathname.split("/").filter(Boolean);
-    // ex: /Chris-R-Bilans/roast-cheville/
     const repo = pathParts[0] || "Chris-R-Bilans";
     const base = `${origin}/${repo}/q-faam-f/`;
 
@@ -363,8 +361,6 @@
 
     const url = getQfaamUrl();
     link.href = url;
-
-    // Génération du QR via service web (simple/rapide)
     img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
   }
 
@@ -405,54 +401,48 @@
       });
     });
 
-    if ($("btnRefreshQfaamQr")) {
-      $("btnRefreshQfaamQr").addEventListener("click", updateQfaamQr);
-    }
-
+    if ($("btnRefreshQfaamQr")) $("btnRefreshQfaamQr").addEventListener("click", updateQfaamQr);
     if ($("faamPaste")) {
       $("faamPaste").addEventListener("change", parseQfaamPasteAndFill);
       $("faamPaste").addEventListener("blur", parseQfaamPasteAndFill);
     }
   }
+
   function refreshAutoSummary() {
-    const thPain = parseNum($("thPain")?.value) ?? 5; // thPain may not exist if removed, safe fallback
-    const lsiThr = parseNum($("thLsi").value) ?? 90;
-    const edemaThr = parseNum($("thEdema").value) ?? 1;
-    const lungeThr = parseNum($("thLungeCm").value) ?? 2;
+    const thPain = parseNum($("thPain")?.value) ?? 5;
+    const lsiThr = parseNum($("thLsi")?.value) ?? 90;
+    const edemaThr = parseNum($("thEdema")?.value) ?? 1;
+    const lungeThr = parseNum($("thLungeCm")?.value) ?? 2;
 
     const messages = [];
 
-    // Triage
-    const ottAuto = safeText($("ottConclusionAuto").value);
-    const synAuto = safeText($("synConclusionAuto").value);
+    const ottAuto = safeText($("ottConclusionAuto")?.value);
+    const synAuto = safeText($("synConclusionAuto")?.value);
     if (ottAuto.includes("positif")) messages.push(`- Triage fracture: ${ottAuto}.`);
     if (synAuto.toLowerCase().includes("suspicion")) messages.push(`- Triage syndesmose: ${synAuto}.`);
 
-    // Pain
-    const painFields = ["repos","appui","marche","course","saut","actuelle"];
-    const painValues = painFields.map(k => parseNum(document.querySelector(`.pain[data-pain="${k}"]`)?.value)).filter(v => v !== null);
+    const painFields = ["repos", "appui", "marche", "course", "saut", "actuelle"];
+    const painValues = painFields
+      .map(k => parseNum(document.querySelector(`.pain[data-pain="${k}"]`)?.value))
+      .filter(v => v !== null);
     const painMax = painValues.length ? Math.max(...painValues) : null;
-    const painCurrent = parseNum(document.querySelector('.pain[data-pain="actuelle"]')?.value);
     if (painMax !== null) {
-      if (painMax >= thPain) messages.push(`- Douleur élevée (EVA max ${fmtNum(painMax,0)}/10) : prudence sur la charge.`);
-      else messages.push(`- Douleur compatible avec progression graduée (EVA max ${fmtNum(painMax,0)}/10).`);
+      if (painMax >= thPain) messages.push(`- Douleur élevée (EVA max ${fmtNum(painMax, 0)}/10) : prudence sur la charge.`);
+      else messages.push(`- Douleur compatible avec progression graduée (EVA max ${fmtNum(painMax, 0)}/10).`);
     }
 
-    // Edema
-    const edemaDelta = parseNum($("edemaDelta").value);
+    const edemaDelta = parseNum($("edemaDelta")?.value);
     if (edemaDelta !== null) {
-      if (Math.abs(edemaDelta) >= edemaThr) messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta,1)} cm (notable).`);
-      else messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta,1)} cm (faible).`);
+      if (Math.abs(edemaDelta) >= edemaThr) messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta, 1)} cm (notable).`);
+      else messages.push(`- Œdème: delta figure-of-eight ${fmtNum(edemaDelta, 1)} cm (faible).`);
     }
 
-    // Lunge
-    const lungeDelta = parseNum($("lungeCmDelta").value);
+    const lungeDelta = parseNum($("lungeCmDelta")?.value);
     if (lungeDelta !== null) {
-      if (Math.abs(lungeDelta) >= lungeThr) messages.push(`- ROM DF en charge: asymétrie lunge ${fmtNum(lungeDelta,1)} cm.`);
-      else messages.push(`- ROM DF en charge: asymétrie lunge faible (${fmtNum(lungeDelta,1)} cm).`);
+      if (Math.abs(lungeDelta) >= lungeThr) messages.push(`- ROM DF en charge: asymétrie lunge ${fmtNum(lungeDelta, 1)} cm.`);
+      else messages.push(`- ROM DF en charge: asymétrie lunge faible (${fmtNum(lungeDelta, 1)} cm).`);
     }
 
-    // HHD deficits
     const ankleRows = collectHhdRows("hhdTable");
     const deficits = ankleRows
       .filter(r => !r.nr && r.lsi && r.lsi !== "NA")
@@ -466,39 +456,36 @@
       messages.push(`- Force HHD: pas de déficit majeur identifié selon seuil LSI < ${lsiThr}%.`);
     }
 
-    // Balance
-    const eoDelta = parseNum($("balEO_Delta").value);
-    const ecDelta = parseNum($("balEC_Delta").value);
+    const eoDelta = parseNum($("balEO_Delta")?.value);
+    const ecDelta = parseNum($("balEC_Delta")?.value);
     if (eoDelta !== null || ecDelta !== null) {
-      let balMsg = "- Équilibre statique:";
       const parts = [];
-      if (eoDelta !== null) parts.push(`EO delta erreurs ${fmtNum(eoDelta,0)}`);
-      if (ecDelta !== null) parts.push(`EC delta erreurs ${fmtNum(ecDelta,0)}`);
-      balMsg += " " + parts.join(" ; ") + ".";
-      messages.push(balMsg);
+      if (eoDelta !== null) parts.push(`EO delta erreurs ${fmtNum(eoDelta, 0)}`);
+      if (ecDelta !== null) parts.push(`EC delta erreurs ${fmtNum(ecDelta, 0)}`);
+      messages.push(`- Équilibre statique: ${parts.join(" ; ")}.`);
     }
 
-    // Gait / run
-    const gaitLimp = $("gaitLimp").value;
+    const gaitLimp = $("gaitLimp")?.value;
     if (gaitLimp) messages.push(`- Marche: boiterie ${gaitLimp.toLowerCase()}.`);
-    const runDone = $("runDone").value;
-    const runPain = parseNum($("runPain").value);
+
+    const runDone = $("runDone")?.value;
+    const runPain = parseNum($("runPain")?.value);
     if (runDone === "Réalisée") {
-      messages.push(`- Course légère réalisée${runPain !== null ? ` (douleur EVA ${fmtNum(runPain,0)}/10)` : ""}.`);
+      messages.push(`- Course légère réalisée${runPain !== null ? ` (douleur EVA ${fmtNum(runPain, 0)}/10)` : ""}.`);
     }
 
-    // Activity
-    const goal = safeText($("actGoal").value);
+    const goal = safeText($("actGoal")?.value);
     if (goal) messages.push(`- Objectif: ${goal}.`);
 
-    // Free triage text appended if present
-    const triageFree = safeText($("triageFreeConclusion").value);
+    const triageFree = safeText($("triageFreeConclusion")?.value);
     if (triageFree) messages.push(`- Note triage: ${triageFree}`);
+
     const faamR = safeText($("faamPctR")?.value);
     const faamL = safeText($("faamPctL")?.value);
     if (faamR || faamL) {
       messages.push(`- Q-FAAM-F: ${faamR ? `Droite ${faamR}%` : ""}${faamR && faamL ? " ; " : ""}${faamL ? `Gauche ${faamL}%` : ""}.`);
     }
+
     if (!messages.length) {
       $("autoSummary").value = "Aucune donnée suffisante pour générer une synthèse automatique.";
       return;
@@ -511,41 +498,41 @@
   function collectData() {
     return {
       mode: document.querySelector('input[name="appMode"]:checked')?.value || "",
-      unit: $("hhdUnit").value,
-      patientCode: $("patientCode").value,
-      patientAge: $("patientAge").value,
-      sideLesion: $("sideLesion").value,
-      sideDominant: $("sideDominant").value,
-      traumaDate: $("traumaDate").value,
-      evalDate: $("evalDate").value,
-      jx: $("jxDisplay").value,
+      unit: $("hhdUnit")?.value || "kgf",
+      patientCode: $("patientCode")?.value || "",
+      patientAge: $("patientAge")?.value || "",
+      sideLesion: $("sideLesion")?.value || "",
+      sideDominant: $("sideDominant")?.value || "",
+      traumaDate: $("traumaDate")?.value || "",
+      evalDate: $("evalDate")?.value || "",
+      jx: $("jxDisplay")?.value || "",
       consultTypes: checkedValues(".consultType"),
       mech: checkedValues(".mech"),
-      mechOther: $("mechOther").value,
+      mechOther: $("mechOther")?.value || "",
 
-      hxSprain: $("hxSprain").value,
-hxFree: $("hxFree")?.value || "",
-hxCount: $("hxCount").value,
-hxSide: $("hxSide").value,
-hxInstab: $("hxInstab").value,
+      hxSprain: $("hxSprain")?.value || "",
+      hxFree: $("hxFree")?.value || "",
+      hxCount: $("hxCount")?.value || "",
+      hxSide: $("hxSide")?.value || "",
+      hxInstab: $("hxInstab")?.value || "",
 
       triage: {
-        ottPainMalleolar: $("ottPainMalleolar").value,
-        ottLatMall: $("ottLatMall").value,
-        ottMedMall: $("ottMedMall").value,
-        ottM5: $("ottM5").value,
-        ottNav: $("ottNav").value,
-        ott4steps: $("ott4steps").value,
-        ottLimp: $("ottLimp").value,
-        ottConclusionAuto: $("ottConclusionAuto").value,
-        synPalp: $("synPalp").value,
-        synSqueeze: $("synSqueeze").value,
-        synER: $("synER").value,
-        synDfComp: $("synDfComp").value,
-        synPain: $("synPain").value,
-        synLocation: $("synLocation").value,
-        synConclusionAuto: $("synConclusionAuto").value,
-        triageFreeConclusion: $("triageFreeConclusion").value,
+        ottPainMalleolar: $("ottPainMalleolar")?.value || "",
+        ottLatMall: $("ottLatMall")?.value || "",
+        ottMedMall: $("ottMedMall")?.value || "",
+        ottM5: $("ottM5")?.value || "",
+        ottNav: $("ottNav")?.value || "",
+        ott4steps: $("ott4steps")?.value || "",
+        ottLimp: $("ottLimp")?.value || "",
+        ottConclusionAuto: $("ottConclusionAuto")?.value || "",
+        synPalp: $("synPalp")?.value || "",
+        synSqueeze: $("synSqueeze")?.value || "",
+        synER: $("synER")?.value || "",
+        synDfComp: $("synDfComp")?.value || "",
+        synPain: $("synPain")?.value || "",
+        synLocation: $("synLocation")?.value || "",
+        synConclusionAuto: $("synConclusionAuto")?.value || "",
+        triageFreeConclusion: $("triageFreeConclusion")?.value || "",
       },
 
       pain: {
@@ -555,77 +542,77 @@ hxInstab: $("hxInstab").value,
         course: document.querySelector('.pain[data-pain="course"]')?.value || "",
         saut: document.querySelector('.pain[data-pain="saut"]')?.value || "",
         actuelle: document.querySelector('.pain[data-pain="actuelle"]')?.value || "",
-        locations: checkedValues(".painLoc"),
-        locationFree: $("painLocFree").value,
+        locations: checkedValues(".painLoc"), // vide (plus de cases) mais sans erreur
+        locationFree: $("painLocFree")?.value || "",
       },
 
       edema: {
-        lesion: $("edemaLesion").value,
-        healthy: $("edemaHealthy").value,
-        delta: $("edemaDelta").value,
-        flag: $("edemaFlag").value
+        lesion: $("edemaLesion")?.value || "",
+        healthy: $("edemaHealthy")?.value || "",
+        delta: $("edemaDelta")?.value || "",
+        flag: $("edemaFlag")?.value || ""
       },
 
       lunge: {
-        cmL: $("lungeCmLesion").value, cmS: $("lungeCmHealthy").value,
-        cmDelta: $("lungeCmDelta").value, cmFlag: $("lungeCmFlag").value,
-        degL: $("lungeDegLesion").value, degS: $("lungeDegHealthy").value,
-        degDelta: $("lungeDegDelta").value,
-        note: $("lungeNote").value
+        cmL: $("lungeCmLesion")?.value || "", cmS: $("lungeCmHealthy")?.value || "",
+        cmDelta: $("lungeCmDelta")?.value || "", cmFlag: $("lungeCmFlag")?.value || "",
+        degL: $("lungeDegLesion")?.value || "", degS: $("lungeDegHealthy")?.value || "",
+        degDelta: $("lungeDegDelta")?.value || "",
+        note: $("lungeNote")?.value || ""
       },
 
       glide: {
-        lesionQual: $("glideLesionQual").value,
-        healthyQual: $("glideHealthyQual").value,
-        lesionPain: $("glideLesionPain").value,
-        healthyPain: $("glideHealthyPain").value,
-        measureText: $("glideMeasureText").value,
-        comment: $("glideComment").value
+        lesionQual: $("glideLesionQual")?.value || "",
+        healthyQual: $("glideHealthyQual")?.value || "",
+        lesionPain: $("glideLesionPain")?.value || "",
+        healthyPain: $("glideHealthyPain")?.value || "",
+        measureText: $("glideMeasureText")?.value || "",
+        comment: $("glideComment")?.value || ""
       },
 
       hhdAnkle: collectHhdRows("hhdTable"),
       hhdHip: collectHhdRows("hhdHipTable"),
 
       balance: {
-        eoL: $("balEO_L").value, eoS: $("balEO_S").value, eoDelta: $("balEO_Delta").value, eoComment: $("balEO_Comment").value,
-        ecL: $("balEC_L").value, ecS: $("balEC_S").value, ecDelta: $("balEC_Delta").value, ecComment: $("balEC_Comment").value,
+        eoL: $("balEO_L")?.value || "", eoS: $("balEO_S")?.value || "", eoDelta: $("balEO_Delta")?.value || "", eoComment: $("balEO_Comment")?.value || "",
+        ecL: $("balEC_L")?.value || "", ecS: $("balEC_S")?.value || "", ecDelta: $("balEC_Delta")?.value || "", ecComment: $("balEC_Comment")?.value || "",
       },
 
       dyn: {
-        type: $("dynType").value,
-        limbLen: $("dynLimbLen").value,
-        composite: $("dynComposite").value,
-        asym: $("dynAsymText").value,
-        comment: $("dynQualComment").value
+        type: $("dynType")?.value || "",
+        limbLen: $("dynLimbLen")?.value || "",
+        composite: $("dynComposite")?.value || "",
+        asym: $("dynAsymText")?.value || "",
+        comment: $("dynQualComment")?.value || ""
       },
 
       gait: {
-        limp: $("gaitLimp").value,
-        stance: $("gaitStance").value,
-        dfavoid: $("gaitDFavoid").value,
-        er: $("gaitER").value,
-        shortStep: $("gaitShortStep").value,
-        other: $("gaitOther").value
+        limp: $("gaitLimp")?.value || "",
+        stance: $("gaitStance")?.value || "",
+        dfavoid: $("gaitDFavoid")?.value || "",
+        er: $("gaitER")?.value || "",
+        shortStep: $("gaitShortStep")?.value || "",
+        other: $("gaitOther")?.value || ""
       },
 
       run: {
-        done: $("runDone").value,
-        pain: $("runPain").value,
-        quality: $("runQuality").value,
-        comment: $("runComment").value
+        done: $("runDone")?.value || "",
+        pain: $("runPain")?.value || "",
+        quality: $("runQuality")?.value || "",
+        comment: $("runComment")?.value || ""
       },
 
       activity: {
-        sport: $("actSport").value,
-        level: $("actLevel").value,
-        volume: $("actVolume").value,
-        role: $("actRole").value,
-        returnDate: $("actReturnDate").value,
-        tegner: $("actTegner").value,
-        goal: $("actGoal").value
+        sport: $("actSport")?.value || "",
+        level: $("actLevel")?.value || "",
+        volume: $("actVolume")?.value || "",
+        role: $("actRole")?.value || "",
+        returnDate: $("actReturnDate")?.value || "",
+        tegner: $("actTegner")?.value || "",
+        goal: $("actGoal")?.value || ""
       },
 
-          faam: {
+      faam: {
         rawR: $("faamRawR")?.value || "",
         pctR: $("faamPctR")?.value || "",
         rawL: $("faamRawL")?.value || "",
@@ -635,7 +622,7 @@ hxInstab: $("hxInstab").value,
         source: $("faamSource")?.value || ""
       },
 
-      autoSummary: $("autoSummary").value
+      autoSummary: $("autoSummary")?.value || ""
     };
   }
 
@@ -705,13 +692,13 @@ hxInstab: $("hxInstab").value,
           <tbody>
             ${rowKV("Ottawa auto", d.triage.ottConclusionAuto)}
             ${rowKV("Syndesmose auto", d.triage.synConclusionAuto)}
-           ${rowKV("Antécédents", [
-  d.hxSprain && `ATCD entorse: ${d.hxSprain}`,
-  d.hxCount && `Nb: ${d.hxCount}`,
-  d.hxSide && `Côté: ${d.hxSide}`,
-  d.hxInstab && `Instabilité: ${d.hxInstab}`,
-  d.hxFree
-].filter(Boolean).join(" | "))}
+            ${rowKV("Antécédents", [
+              d.hxSprain && `ATCD entorse: ${d.hxSprain}`,
+              d.hxCount && `Nb: ${d.hxCount}`,
+              d.hxSide && `Côté: ${d.hxSide}`,
+              d.hxInstab && `Instabilité: ${d.hxInstab}`,
+              d.hxFree
+            ].filter(Boolean).join(" | "))}
             ${rowKV("Conclusion triage (libre)", d.triage.triageFreeConclusion)}
           </tbody>
         </table>
@@ -764,7 +751,7 @@ hxInstab: $("hxInstab").value,
             ${rowKV("Course légère", [d.run.done, d.run.pain && `EVA ${d.run.pain}`, d.run.quality, d.run.comment].filter(Boolean).join(" | "))}
             ${rowKV("Activité", [d.activity.sport, d.activity.level, d.activity.volume, d.activity.role].filter(Boolean).join(" | "))}
             ${rowKV("Échéance / Tegner / Objectif", [d.activity.returnDate, d.activity.tegner && `Tegner ${d.activity.tegner}`, d.activity.goal].filter(Boolean).join(" | "))}
-                        ${rowKV("Quick FAAM", [
+            ${rowKV("Quick FAAM", [
               d.faam.rawR && `Droite ${d.faam.rawR}`,
               d.faam.pctR && `Droite % ${d.faam.pctR}`,
               d.faam.rawL && `Gauche ${d.faam.rawL}`,
@@ -793,7 +780,7 @@ hxInstab: $("hxInstab").value,
     setTimeout(() => {
       document.body.classList.remove("print-summary");
     }, 300);
-    isDirty = false; // on considère l’export comme “sauvegarde” locale (PDF)
+    isDirty = false;
   }
 
   function printForm() {
@@ -803,7 +790,6 @@ hxInstab: $("hxInstab").value,
   function resetAll(askConfirm = true) {
     if (askConfirm && !confirm("Effacer toutes les données du bilan en cours ?")) return;
 
-    // reset form-like inputs
     $$("input, select, textarea").forEach(el => {
       if (el.type === "radio" || el.type === "checkbox") {
         el.checked = false;
@@ -812,36 +798,29 @@ hxInstab: $("hxInstab").value,
       }
     });
 
-    // restore defaults
     const modeRadio = document.querySelector('input[name="appMode"][value="ROAST cabinet"]');
     if (modeRadio) modeRadio.checked = true;
-    $("hhdUnit").value = "kgf";
-    $("thLsi").value = 90;
-    $("thEdema").value = 1;
-    $("thLungeCm").value = 2;
+    if ($("hhdUnit")) $("hhdUnit").value = "kgf";
+    if ($("thLsi")) $("thLsi").value = 90;
+    if ($("thEdema")) $("thEdema").value = 1;
+    if ($("thLungeCm")) $("thLungeCm").value = 2;
 
-    // clear readonly computed
     ["ottConclusionAuto","synConclusionAuto","edemaDelta","edemaFlag","lungeCmDelta","lungeCmFlag","lungeDegDelta","balEO_Delta","balEC_Delta","jxDisplay"].forEach(id => {
       if ($(id)) $(id).value = "";
     });
 
-    // recreate HHD rows (easier than clearing every field)
     initHhdTables();
-
-    // reset dates
     initDates();
 
-    // recalc
     updateOttawa();
     updateSyndesmose();
     updateEdema();
     updateLunge();
     updateBalanceStatic();
     refreshAutoSummary();
+    updateQfaamQr();
 
-    // return to start
     goToStep(1);
-
     isDirty = false;
   }
 
@@ -854,22 +833,19 @@ hxInstab: $("hxInstab").value,
   }
 
   function bindSpecifics() {
-    // Defaults
     updateHhdUnitLabel();
 
-    // Events that need immediate compute at startup
-    ["traumaDate","evalDate"].forEach(id => $(id).addEventListener("change", computeJx));
+    ["traumaDate","evalDate"].forEach(id => $(id)?.addEventListener("change", computeJx));
 
-    // Triage auto updates
     ["ottPainMalleolar","ottLatMall","ottMedMall","ottM5","ottNav","ott4steps","ottLimp"].forEach(id => {
-      $(id).addEventListener("change", updateOttawa);
-    });
-    ["synPalp","synSqueeze","synER","synDfComp","synPain","synLocation"].forEach(id => {
-      $(id).addEventListener("change", updateSyndesmose);
-      $(id).addEventListener("input", updateSyndesmose);
+      $(id)?.addEventListener("change", updateOttawa);
     });
 
-    // Recalc HHD via delegation
+    ["synPalp","synSqueeze","synER","synDfComp","synPain","synLocation"].forEach(id => {
+      $(id)?.addEventListener("change", updateSyndesmose);
+      $(id)?.addEventListener("input", updateSyndesmose);
+    });
+
     $("hhdTable").addEventListener("input", () => { recalcAllHhd(); refreshAutoSummary(); });
     $("hhdTable").addEventListener("change", () => { recalcAllHhd(); refreshAutoSummary(); });
     $("hhdHipTable").addEventListener("input", () => { recalcAllHhd(); refreshAutoSummary(); });
@@ -877,7 +853,6 @@ hxInstab: $("hxInstab").value,
 
     $("hhdUnit").addEventListener("change", updateHhdUnitLabel);
 
-    // Print mode cleanup
     window.addEventListener("afterprint", () => {
       document.body.classList.remove("print-summary");
     });
@@ -885,9 +860,7 @@ hxInstab: $("hxInstab").value,
 
   function registerServiceWorker() {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {
-        // silencieux
-      });
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
     }
   }
 
@@ -897,6 +870,7 @@ hxInstab: $("hxInstab").value,
     bindTopButtons();
     initHhdTables();
     bindSpecifics();
+    bindQfaam();
     initDates();
     updateOttawa();
     updateSyndesmose();
@@ -904,7 +878,6 @@ hxInstab: $("hxInstab").value,
     updateLunge();
     updateBalanceStatic();
     refreshAutoSummary();
-    bindQfaam();
     updateQfaamQr();
     registerServiceWorker();
   }
