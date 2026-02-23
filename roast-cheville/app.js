@@ -524,9 +524,10 @@
       mechOther: $("mechOther").value,
 
       hxSprain: $("hxSprain").value,
-      hxCount: $("hxCount").value,
-      hxSide: $("hxSide").value,
-      hxInstab: $("hxInstab").value,
+hxFree: $("hxFree")?.value || "",
+hxCount: $("hxCount").value,
+hxSide: $("hxSide").value,
+hxInstab: $("hxInstab").value,
 
       triage: {
         ottPainMalleolar: $("ottPainMalleolar").value,
