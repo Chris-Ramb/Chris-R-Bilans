@@ -272,7 +272,45 @@
       </div>
 
       <div class="card">
-        <h3>Antécédents d’entorse (détaillé)</h3>
+       <div class="card">
+  <h3>Antécédents</h3>
+  <div class="grid g4">
+    <div class="field">
+      <label>ATCD entorse</label>
+      <select id="hxSprain">
+        <option value="">—</option>
+        <option>Non</option>
+        <option>Oui</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Nombre estimé</label>
+      <input id="hxCount" type="number" min="0">
+    </div>
+    <div class="field">
+      <label>Côté des ATCD</label>
+      <select id="hxSide">
+        <option value="">—</option>
+        <option>Gauche</option>
+        <option>Droite</option>
+        <option>Bilatéral</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Instabilité antérieure ressentie</label>
+      <select id="hxInstab">
+        <option value="">—</option>
+        <option>Non</option>
+        <option>Oui</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:8px">
+    <label>Précisions antécédents (texte libre)</label>
+    <textarea id="hxFree" placeholder="Ex : entorse droite il y a 2 ans, immobilisation, récidives, rééducation..."></textarea>
+  </div>
+</div>
         <div class="grid g4">
           <div class="field">
             <label>ATCD entorse</label>
