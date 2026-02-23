@@ -49,7 +49,7 @@
     .card{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;margin-bottom:10px}
     .card h3{margin:0 0 8px;font-size:.92rem}
     .muted{color:var(--muted)}
-    .help{font-size:.8rem;color:var(--muted)}
+    .help{color:var(--muted);font-size:.8rem}
     .help-q{
       display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
       border-radius:50%;border:1px solid var(--line);font-size:.75rem;color:var(--muted);
@@ -133,15 +133,15 @@
 
     <div class="stepper">
       <div class="step-nav" id="stepNav">
-  <button class="step-btn active" data-step="1">1. Mode</button>
-  <button class="step-btn" data-step="2">2. Contexte</button>
-  <button class="step-btn" data-step="3">3. Triage</button>
-  <button class="step-btn" data-step="4">4. Douleur / œdème</button>
-  <button class="step-btn" data-step="5">5. ROM & Arthro</button>
-  <button class="step-btn" data-step="6">6. Force HHD</button>
-  <button class="step-btn" data-step="7">7. Équilibre</button>
-  <button class="step-btn" data-step="8">8. Marche / Synthèse</button>
-</div>
+        <button class="step-btn active" data-step="1">1. Mode</button>
+        <button class="step-btn" data-step="2">2. Contexte</button>
+        <button class="step-btn" data-step="3">3. Triage</button>
+        <button class="step-btn" data-step="4">4. Douleur / œdème</button>
+        <button class="step-btn" data-step="5">5. ROM & Arthro</button>
+        <button class="step-btn" data-step="6">6. Force HHD</button>
+        <button class="step-btn" data-step="7">7. Équilibre</button>
+        <button class="step-btn" data-step="8">8. Marche / Synthèse</button>
+      </div>
     </div>
 
     <!-- STEP 1 -->
@@ -273,45 +273,7 @@
       </div>
 
       <div class="card">
-       <div class="card">
-  <h3>Antécédents</h3>
-  <div class="grid g4">
-    <div class="field">
-      <label>ATCD entorse</label>
-      <select id="hxSprain">
-        <option value="">—</option>
-        <option>Non</option>
-        <option>Oui</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Nombre estimé</label>
-      <input id="hxCount" type="number" min="0">
-    </div>
-    <div class="field">
-      <label>Côté des ATCD</label>
-      <select id="hxSide">
-        <option value="">—</option>
-        <option>Gauche</option>
-        <option>Droite</option>
-        <option>Bilatéral</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Instabilité antérieure ressentie</label>
-      <select id="hxInstab">
-        <option value="">—</option>
-        <option>Non</option>
-        <option>Oui</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="field" style="margin-top:8px">
-    <label>Précisions antécédents (texte libre)</label>
-    <textarea id="hxFree" placeholder="Ex : entorse droite il y a 2 ans, immobilisation, récidives, rééducation..."></textarea>
-  </div>
-</div>
+        <h3>Antécédents</h3>
         <div class="grid g4">
           <div class="field">
             <label>ATCD entorse</label>
@@ -342,6 +304,11 @@
               <option>Oui</option>
             </select>
           </div>
+        </div>
+
+        <div class="field" style="margin-top:8px">
+          <label>Précisions antécédents (texte libre)</label>
+          <textarea id="hxFree" placeholder="Ex : entorse droite il y a 2 ans, immobilisation, récidives, rééducation..."></textarea>
         </div>
       </div>
 
@@ -412,10 +379,8 @@
 
     <!-- STEP 4 -->
     <section class="panel" data-step-panel="4">
-      <h2>Étape 4 — Douleur / Oedème</h2>
-<div style="margin:6px 0 10px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#f9fafb; font-weight:600;">
-  Douleur / œdème
-</div>
+      <h2>Étape 4 — Douleur / œdème</h2>
+
       <div class="card">
         <h3>Douleur EVA 0–10</h3>
         <div class="grid g4">
@@ -426,10 +391,11 @@
           <div class="field"><label>Saut</label><input class="pain" data-pain="saut" type="number" min="0" max="10" step="0.5"></div>
           <div class="field"><label>Douleur actuelle</label><input class="pain" data-pain="actuelle" type="number" min="0" max="10" step="0.5"></div>
         </div>
+
         <div class="field" style="margin-top:8px">
-  <label>Localisation douleur (texte libre)</label>
-  <input id="painLocFree" type="text" placeholder="Ex : antéro-latérale sous malléole, sinus du tarse, syndesmose...">
-</div>
+          <label>Localisation douleur (texte libre)</label>
+          <input id="painLocFree" type="text" placeholder="Ex : antéro-latérale sous malléole, sinus du tarse, syndesmose...">
+        </div>
       </div>
 
       <div class="card">
@@ -441,10 +407,7 @@
           <div class="field"><label>Interprétation auto</label><input id="edemaFlag" type="text" readonly></div>
         </div>
       </div>
-<div style="margin:6px 0 10px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#f9fafb; font-weight:600;">
-  ROM
-</div>
-      
+
       <div class="wizard-footer">
         <button data-prev>Précédent</button>
         <div class="right">
@@ -455,7 +418,57 @@
 
     <!-- STEP 5 -->
     <section class="panel" data-step-panel="5">
-      <h2>Étape 5 — Force HHD (tout skippable)</h2>
+      <h2>Étape 5 — ROM & Arthro</h2>
+
+      <div class="card">
+        <h3>ROM — Weight-Bearing Lunge Test <span class="help-q" title="Mesure en cm et/ou en degrés, 2 côtés">?</span></h3>
+        <div class="grid g4">
+          <div class="field"><label>Lunge côté lésé (cm)</label><input id="lungeCmLesion" type="number" step="0.1"></div>
+          <div class="field"><label>Lunge côté sain (cm)</label><input id="lungeCmHealthy" type="number" step="0.1"></div>
+          <div class="field"><label>Delta cm</label><input id="lungeCmDelta" type="text" readonly></div>
+          <div class="field"><label>Interprétation cm</label><input id="lungeCmFlag" type="text" readonly></div>
+        </div>
+        <div class="grid g4" style="margin-top:8px">
+          <div class="field"><label>Lunge côté lésé (°)</label><input id="lungeDegLesion" type="number" step="0.1"></div>
+          <div class="field"><label>Lunge côté sain (°)</label><input id="lungeDegHealthy" type="number" step="0.1"></div>
+          <div class="field"><label>Delta °</label><input id="lungeDegDelta" type="text" readonly></div>
+          <div class="field"><label>Note ROM</label><input id="lungeNote" type="text" placeholder="Qualité / douleur / fin de course"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Arthrocinématique — Posterior talar glide</h3>
+        <div class="grid g4">
+          <div class="field"><label>Lésé (qualitatif)</label>
+            <select id="glideLesionQual">
+              <option value=""></option><option>Normal</option><option>Hypomobile</option><option>Hypermobile</option>
+            </select>
+          </div>
+          <div class="field"><label>Sain (qualitatif)</label>
+            <select id="glideHealthyQual">
+              <option value=""></option><option>Normal</option><option>Hypomobile</option><option>Hypermobile</option>
+            </select>
+          </div>
+          <div class="field"><label>Douleur lésé (EVA)</label><input id="glideLesionPain" type="number" min="0" max="10" step="0.5"></div>
+          <div class="field"><label>Douleur sain (EVA)</label><input id="glideHealthyPain" type="number" min="0" max="10" step="0.5"></div>
+        </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field"><label>Mesure / description comparative</label><input id="glideMeasureText" type="text" placeholder="Ex : glide post diminué à gauche"></div>
+          <div class="field"><label>Commentaire</label><input id="glideComment" type="text"></div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button data-prev>Précédent</button>
+        <div class="right">
+          <button class="primary" data-next>Suivant</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="panel" data-step-panel="6">
+      <h2>Étape 6 — Force HHD (tout skippable)</h2>
 
       <div class="card">
         <h3>HHD cheville (DF / PF / INV / EV) <span class="help-q" title="1 à 3 essais. Le calcul prend la meilleure valeur disponible.">?</span></h3>
@@ -526,9 +539,9 @@
       </div>
     </section>
 
-    <!-- STEP 6 -->
-    <section class="panel" data-step-panel="6">
-      <h2>Étape 6 — Équilibre (statique + dynamique préparé)</h2>
+    <!-- STEP 7 -->
+    <section class="panel" data-step-panel="7">
+      <h2>Étape 7 — Équilibre (statique + dynamique préparé)</h2>
 
       <div class="card">
         <h3>Équilibre statique (30 s, comparatif) <span class="help-q" title="V1 : EO et EC sur surface stable, nombre d’erreurs">?</span></h3>
@@ -575,9 +588,9 @@
       </div>
     </section>
 
-    <!-- STEP 7 -->
-    <section class="panel" data-step-panel="7">
-      <h2>Étape 7 — Marche, activité, Quick FAAM, synthèse</h2>
+    <!-- STEP 8 -->
+    <section class="panel" data-step-panel="8">
+      <h2>Étape 8 — Marche, activité, Quick FAAM, synthèse</h2>
 
       <div class="card">
         <h3>Marche (gradation : absent / léger / modéré / sévère)</h3>
@@ -619,41 +632,41 @@
       </div>
 
       <div class="card">
-  <h3>Quick FAAM (patient smartphone via QR)</h3>
+        <h3>Quick FAAM (patient smartphone via QR)</h3>
 
-  <div class="grid g4">
-    <div class="field"><label>Score Droite brut</label><input id="faamRawR" type="text" placeholder="ex. 42/48"></div>
-    <div class="field"><label>Score Droite %</label><input id="faamPctR" type="number" step="0.1"></div>
-    <div class="field"><label>Score Gauche brut</label><input id="faamRawL" type="text" placeholder="ex. 48/48"></div>
-    <div class="field"><label>Score Gauche %</label><input id="faamPctL" type="number" step="0.1"></div>
-  </div>
+        <div class="grid g4">
+          <div class="field"><label>Score Droite brut</label><input id="faamRawR" type="text" placeholder="ex. 42/48"></div>
+          <div class="field"><label>Score Droite %</label><input id="faamPctR" type="number" step="0.1"></div>
+          <div class="field"><label>Score Gauche brut</label><input id="faamRawL" type="text" placeholder="ex. 48/48"></div>
+          <div class="field"><label>Score Gauche %</label><input id="faamPctL" type="number" step="0.1"></div>
+        </div>
 
-  <div class="grid g2" style="margin-top:8px">
-    <div class="field">
-      <label>Coller le résultat copié depuis le smartphone</label>
-      <input id="faamPaste" type="text" placeholder="QFAAMF | Code:... | Droite:... | DroitePct:... | Gauche:... | GauchePct:...">
-      <div class="help">Le patient clique “Copier mes scores”, puis tu colles ici → les champs se remplissent automatiquement.</div>
-    </div>
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field">
+            <label>Coller le résultat copié depuis le smartphone</label>
+            <input id="faamPaste" type="text" placeholder="QFAAMF | Code:... | Droite:... | DroitePct:... | Gauche:... | GauchePct:...">
+            <div class="help">Le patient clique “Copier mes scores”, puis tu colles ici → les champs se remplissent automatiquement.</div>
+          </div>
 
-    <div style="border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff;">
-      <div style="font-weight:600; margin-bottom:6px;">QR patient (interface uniquement)</div>
-      <div class="help" style="margin-bottom:8px;">Le QR ouvre le Q-FAAM-F avec code patient / âge / côté / Jx / date.</div>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <img id="qfaamQrImg" alt="QR Q-FAAM-F" style="width:140px; height:140px; border:1px solid var(--line); border-radius:8px; background:#fff;">
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <a id="qfaamLink" href="#" target="_blank" rel="noopener" style="display:inline-block; text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--text);">Ouvrir le Q-FAAM-F</a>
-          <button id="btnRefreshQfaamQr" type="button">Mettre à jour le QR</button>
-          <div class="help">Le PDF ROAST n’affichera pas ce QR (uniquement les résultats saisis).</div>
+          <div style="border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff;">
+            <div style="font-weight:600; margin-bottom:6px;">QR patient (interface uniquement)</div>
+            <div class="help" style="margin-bottom:8px;">Le QR ouvre le Q-FAAM-F avec code patient / âge / côté / Jx / date.</div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <img id="qfaamQrImg" alt="QR Q-FAAM-F" style="width:140px; height:140px; border:1px solid var(--line); border-radius:8px; background:#fff;">
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <a id="qfaamLink" href="#" target="_blank" rel="noopener" style="display:inline-block; text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--text);">Ouvrir le Q-FAAM-F</a>
+                <button id="btnRefreshQfaamQr" type="button">Mettre à jour le QR</button>
+                <div class="help">Le PDF ROAST n’affichera pas ce QR (uniquement les résultats saisis).</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g2" style="margin-top:8px">
+          <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
+          <div class="field"><label>Source</label><input id="faamSource" type="text" value="Q-FAAM-F smartphone via QR"></div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="grid g2" style="margin-top:8px">
-    <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
-    <div class="field"><label>Source</label><input id="faamSource" type="text" value="Q-FAAM-F smartphone via QR"></div>
-  </div>
-</div>
 
       <div class="card">
         <h3>Synthèse automatique</h3>
