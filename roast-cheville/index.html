@@ -48,6 +48,16 @@
 
     .card{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;margin-bottom:10px}
     .card h3{margin:0 0 8px;font-size:.92rem}
+    .card h3.block-title{
+      font-size:1rem;
+      font-weight:700;
+      padding:8px 10px;
+      margin:-2px -2px 10px -2px;
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+    }
+
     .muted{color:var(--muted)}
     .help{color:var(--muted);font-size:.8rem}
     .help-q{
@@ -91,6 +101,24 @@
     .calc{font-weight:600;white-space:nowrap}
     .badge{
       display:inline-block;font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)
+    }
+
+    .ybt-results{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:8px;
+    }
+    @media (max-width:700px){ .ybt-results{grid-template-columns:1fr;}}
+    .ybt-box{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px;
+      background:#fafafa;
+    }
+    .ybt-box h4{
+      margin:0 0 6px;
+      font-size:.9rem;
     }
 
     .wizard-footer{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
@@ -139,7 +167,7 @@
         <button class="step-btn" data-step="4">4. Douleur / œdème</button>
         <button class="step-btn" data-step="5">5. ROM & Arthro</button>
         <button class="step-btn" data-step="6">6. Force</button>
-        <button class="step-btn" data-step="7">7. Équilibre</button>
+        <button class="step-btn" data-step="7">7. Contrôle postural</button>
         <button class="step-btn" data-step="8">8. Marche / Synthèse</button>
       </div>
     </div>
@@ -482,42 +510,114 @@
 
     <!-- STEP 7 -->
     <section class="panel" data-step-panel="7">
-      <h2>Étape 7 — Équilibre (statique + dynamique préparé)</h2>
+      <h2>Étape 7 — Contrôle postural</h2>
 
       <div class="card">
-        <h3>Équilibre statique (30 s, comparatif) <span class="help-q" title="V1 : EO et EC sur surface stable, nombre d’erreurs">?</span></h3>
+        <h3 class="block-title">Contrôle postural statique — Single Leg Stance (20 s)</h3>
         <div class="grid g4">
-          <div class="field"><label>EO stable – erreurs lésé (30s)</label><input id="balEO_L" type="number" min="0"></div>
-          <div class="field"><label>EO stable – erreurs sain (30s)</label><input id="balEO_S" type="number" min="0"></div>
-          <div class="field"><label>Delta EO (L-S)</label><input id="balEO_Delta" type="text" readonly></div>
-          <div class="field"><label>Commentaire EO</label><input id="balEO_Comment" type="text"></div>
-        </div>
-        <div class="grid g4" style="margin-top:8px">
-          <div class="field"><label>EC stable – erreurs lésé (30s)</label><input id="balEC_L" type="number" min="0"></div>
-          <div class="field"><label>EC stable – erreurs sain (30s)</label><input id="balEC_S" type="number" min="0"></div>
-          <div class="field"><label>Delta EC (L-S)</label><input id="balEC_Delta" type="text" readonly></div>
-          <div class="field"><label>Commentaire EC</label><input id="balEC_Comment" type="text"></div>
+          <div class="field">
+            <label><span data-side-label="right"></span> — erreurs</label>
+            <input id="sls_r" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label><span data-side-label="left"></span> — erreurs</label>
+            <input id="sls_l" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label id="slsDeltaLabel">Delta</label>
+            <input id="sls_delta" type="text" readonly>
+          </div>
+          <div class="field">
+            <label>Commentaire</label>
+            <input id="sls_comment" type="text" placeholder="Qualité du contrôle, stratégie, douleur…">
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h3>Équilibre dynamique (préparé V1, organisation à affiner)</h3>
-        <div class="grid g4">
-          <div class="field"><label>Type</label>
-            <select id="dynType">
-              <option></option>
-              <option>Y-Balance 3 directions</option>
-              <option>SEBT</option>
-              <option>Mini-SEBT</option>
-            </select>
+        <h3 class="block-title">Contrôle postural dynamique — Y Balance Test</h3>
+
+        <div class="grid g2">
+          <div class="field">
+            <label>Longueur MI <span data-side-label="right"></span> (cm)</label>
+            <input id="ybt_len_r" type="number" step="0.1" min="0">
           </div>
-          <div class="field"><label>Longueur MI (cm) optionnel</label><input id="dynLimbLen" type="number" step="0.1"></div>
-          <div class="field"><label>Score composite (optionnel)</label><input id="dynComposite" type="number" step="0.1"></div>
-          <div class="field"><label>Asymétrie notable (texte)</label><input id="dynAsymText" type="text"></div>
+          <div class="field">
+            <label>Longueur MI <span data-side-label="left"></span> (cm)</label>
+            <input id="ybt_len_l" type="number" step="0.1" min="0">
+          </div>
         </div>
+
+        <div class="table-wrap" style="margin-top:8px">
+          <table>
+            <thead>
+              <tr>
+                <th>Direction</th>
+                <th><span data-side-label="right"></span> Essai 1</th>
+                <th><span data-side-label="right"></span> Essai 2</th>
+                <th><span data-side-label="right"></span> Essai 3</th>
+                <th><span data-side-label="left"></span> Essai 1</th>
+                <th><span data-side-label="left"></span> Essai 2</th>
+                <th><span data-side-label="left"></span> Essai 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Antérieure</td>
+                <td><input id="ybt_r_ant_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_ant_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_ant_3" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_ant_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_ant_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_ant_3" class="num" type="number" step="0.1"></td>
+              </tr>
+              <tr>
+                <td>Postéro-médiale</td>
+                <td><input id="ybt_r_pm_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_pm_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_pm_3" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pm_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pm_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pm_3" class="num" type="number" step="0.1"></td>
+              </tr>
+              <tr>
+                <td>Postéro-latérale</td>
+                <td><input id="ybt_r_pl_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_pl_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_r_pl_3" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pl_1" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pl_2" class="num" type="number" step="0.1"></td>
+                <td><input id="ybt_l_pl_3" class="num" type="number" step="0.1"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="ybt-results">
+          <div class="ybt-box">
+            <h4>Résultats normalisés — <span data-side-label="right"></span> (% longueur MI)</h4>
+            <div class="grid g2">
+              <div class="field"><label>ANT moyenne normalisée</label><input id="ybt_norm_r_ant" type="text" readonly></div>
+              <div class="field"><label>PM moyenne normalisée</label><input id="ybt_norm_r_pm" type="text" readonly></div>
+              <div class="field"><label>PL moyenne normalisée</label><input id="ybt_norm_r_pl" type="text" readonly></div>
+              <div class="field"><label>Score composite normalisé</label><input id="ybt_comp_r" type="text" readonly></div>
+            </div>
+          </div>
+
+          <div class="ybt-box">
+            <h4>Résultats normalisés — <span data-side-label="left"></span> (% longueur MI)</h4>
+            <div class="grid g2">
+              <div class="field"><label>ANT moyenne normalisée</label><input id="ybt_norm_l_ant" type="text" readonly></div>
+              <div class="field"><label>PM moyenne normalisée</label><input id="ybt_norm_l_pm" type="text" readonly></div>
+              <div class="field"><label>PL moyenne normalisée</label><input id="ybt_norm_l_pl" type="text" readonly></div>
+              <div class="field"><label>Score composite normalisé</label><input id="ybt_comp_l" type="text" readonly></div>
+            </div>
+          </div>
+        </div>
+
         <div class="field" style="margin-top:8px">
-          <label>Commentaire qualité contrôle (genou/hanche/cheville)</label>
-          <textarea id="dynQualComment"></textarea>
+          <label>Commentaire Y Balance Test</label>
+          <textarea id="ybt_comment"></textarea>
         </div>
       </div>
 
@@ -573,7 +673,7 @@
       </div>
 
       <div class="card">
-        <h3>Quick FAAM (patient smartphone via QR)</h3>
+        <h3>Quick FAAM (accès patient par QR uniquement)</h3>
 
         <div class="grid g4">
           <div class="field"><label>Score Droite brut</label><input id="faamRawR" type="text" placeholder="ex. 42/48"></div>
@@ -582,30 +682,15 @@
           <div class="field"><label>Score Gauche %</label><input id="faamPctL" type="number" step="0.1"></div>
         </div>
 
-        <div class="grid g2" style="margin-top:8px">
-          <div class="field">
-            <label>Coller le résultat copié depuis le smartphone</label>
-            <input id="faamPaste" type="text" placeholder="QFAAMF | Code:... | Droite:... | DroitePct:... | Gauche:... | GauchePct:...">
-            <div class="help">Le patient clique “Copier mes scores”, puis tu colles ici → les champs se remplissent automatiquement.</div>
-          </div>
-
-          <div style="border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff;">
-            <div style="font-weight:600; margin-bottom:6px;">QR patient (interface uniquement)</div>
-            <div class="help" style="margin-bottom:8px;">Le QR ouvre le Q-FAAM-F avec code patient / âge / côté / Jx / date.</div>
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <img id="qfaamQrImg" alt="QR Q-FAAM-F" style="width:140px; height:140px; border:1px solid var(--line); border-radius:8px; background:#fff;">
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                <a id="qfaamLink" href="#" target="_blank" rel="noopener" style="display:inline-block; text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--text);">Ouvrir le Q-FAAM-F</a>
-                <button id="btnRefreshQfaamQr" type="button">Mettre à jour le QR</button>
-                <div class="help">Le PDF ROAST n’affichera pas ce QR (uniquement les résultats saisis).</div>
-              </div>
-            </div>
-          </div>
+        <div style="border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; margin-top:8px;">
+          <div style="font-weight:600; margin-bottom:6px;">QR patient Q-FAAM-F</div>
+          <div class="help" style="margin-bottom:8px;">Le patient scanne ce QR code avec son smartphone pour ouvrir le questionnaire.</div>
+          <img id="qfaamQrImg" alt="QR Q-FAAM-F" style="width:160px; height:160px; border:1px solid var(--line); border-radius:8px; background:#fff;">
         </div>
 
-        <div class="grid g2" style="margin-top:8px">
-          <div class="field"><label>Commentaire FAAM</label><input id="faamComment" type="text"></div>
-          <div class="field"><label>Source</label><input id="faamSource" type="text" value="Q-FAAM-F smartphone via QR"></div>
+        <div class="field" style="margin-top:8px">
+          <label>Commentaire FAAM</label>
+          <input id="faamComment" type="text">
         </div>
       </div>
 
